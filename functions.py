@@ -126,6 +126,8 @@ def hasPendingResponses(user_id, bot):
 	return False
 
 def stringBeginsWith(haystack, needle):
+	if len(needle) > len(haystack):
+		return False
 	for i in range(len(needle) - 1):
 		if haystack[i] != needle[i]:
 			return False
@@ -213,8 +215,8 @@ def genEspace():
 				eligibleChars.append(char)
 		if eligibleChars:
 			randInt = math.trunc(random.random()*len(eligibleChars))
-			print("len(eligibleChars: "+str(len(eligibleChars)))
-			print("randInt: "+str(randInt))
+			#print("len(eligibleChars: "+str(len(eligibleChars)))
+			#print("randInt: "+str(randInt))
 			resList.append(eligibleChars[randInt-1])
 		else:
 			resList.append(random.choice(["	", "　"]))
@@ -234,7 +236,6 @@ def fetchCoronaInfo(elementDict, elementType, countryName, embed):
 def randomMeme(reddit):
 	embed = discord.Embed(colour = discord.Color.blue())
 	embed.set_author(name = "Dankmeme de hot")
-
 	subreddit = reddit.subreddit("dankmemes")
 	hot = subreddit.hot(limit=100)
 	randInt = math.trunc(random.random()*99)
@@ -247,7 +248,7 @@ def randomMeme(reddit):
 	"""print("Title: " + targetPost.title)
 	print("Flair: " + str(targetPost.link_flair_text))
 	print("Author: u/" + targetPost.author.name)"""
-	embed.description = "**" + targetPost.title + "**" + "	:arrow_up: " + parsePostScore(targetPost.score)
+	embed.description = "[**" + targetPost.title + "**](https://www.reddit.com"+targetPost.permalink+")" + "	:arrow_up: " + parsePostScore(targetPost.score)
 	if targetPost.link_flair_text:
 		embed.description += "\n_" + targetPost.link_flair_text + "_"
 	embed.description += "\nu/" + targetPost.author.name

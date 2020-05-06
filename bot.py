@@ -17,6 +17,7 @@ import logging
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
 from variables import *
+#print(executingRepetitiveTask)
 from functions import *
 
 from bs4 import BeautifulSoup
@@ -24,6 +25,7 @@ from selenium import webdriver
 
 import sys
 import praw
+import datetime
 
 #logging.basicConfig(level=logging.DEBUG)
 
@@ -46,6 +48,9 @@ with open(DB_FILENAME) as json_file:
 
 #client = discord.Client()
 bot = commands.Bot(command_prefix=prefixesList)
+
+bot.executingRepetitiveTask = False
+bot.cancelledCommand = False
 
 bot.remove_command("help")
 
@@ -105,13 +110,13 @@ async def on_guild_remove(guild):
 async def on_message(message):
 	#print("message.guild.id: "+str(message.guild.id))
 	#print("message.author.id: "+str(message.author.id))
-	print("message.content: "+message.content)
+	##print("message.content: "+message.content)
 	#print("bot.user.mention: "+bot.user.mention)
 	# we do not want the bot to reply to itself
 	if message.author == bot.user:
 		return
 	#changer de prefixe avec le ping
-	print("usableMention: "+usableMention(bot.user.mention))
+	##print("usableMention: "+usableMention(bot.user.mention))
 	if len(usableMention(message.content)) == len(bot.user.mention) and stringBeginsWith(usableMention(message.content), bot.user.mention):
 		print("bot has been pinged")
 		prefix = "[Error while fetching prefix]" + random.choice(errorMessages)
@@ -202,6 +207,7 @@ async def help(ctx):
 	embed.add_field(name="espace", value="Remplit le chat d'étoiles ✦\nCette commande peut aussi être répétée comme ceci:\n_.espace 69_", inline=False)
 	embed.add_field(name="urban", value="Cherche le mot donné dans Urban Dictionnary\nExemple d'utilisation:\n_.urban hanus_", inline=False)
 	embed.add_field(name="dankmeme", value="Affiche un meme aléatoire parmi les 100 memes les plus hot de r/dankmemes", inline=False)
+	embed.add_field(name="cancel", value="Permet d'annuler la commande _.repeat_ ou _.espace_", inline=False)
 	await ctx.author.send(embed=embed)
 
 @bot.command(pass_context=True)
@@ -363,15 +369,73 @@ async def s(ctx):
 
 @bot.command(pass_context=True)
 async def espace(ctx, repeat = 1):
-	for i in range(repeat):
-		await ctx.channel.send(genEspace())
+	if not bot.executingRepetitiveTask and guildHasThisPrefix(ctx.guild.id, ctx.prefix) and (repeat <= 5 or repeat > 5 and hasPerms(ctx)):
+		if not hasPerms(ctx):
+			print("Doesn't have perms")
+			with open(DB_FILENAME, 'r+') as json_file:
+				data = json.load(json_file)
+				if str(ctx.author.id) not in data["servers"][str(ctx.guild.id)]["lastUsedEspace"]:
+					print("user doesn't have a timestamp")
+					data["servers"][str(ctx.guild.id)]["lastUsedEspace"][str(ctx.author.id)] = datetime.datetime.now().timestamp()
+					writeJSON(data, json_file)
+					placeDB(DB_FILENAME)
+				else:
+					print("user has a timestamp")
+					lastDate = data["servers"][str(ctx.guild.id)]["lastUsedEspace"][str(ctx.author.id)]
+					dateDelta = datetime.datetime.now().timestamp() - lastDate
+					print("dateDelta.seconds: " + str(dateDelta))
+					if dateDelta / 60 < 5:
+						print("Delta < 5 min")
+						await ctx.send(ctx.author.mention + "vous devez attendre " + str(5 - math.trunc(dateDelta / 60)) + " minute(s) avant de pouvoir utiliser cette commande")
+						return
+					else:
+						print("delta > min")
+						data["servers"][str(ctx.guild.id)]["lastUsedEspace"] = datetime.datetime.now().timestamp()
+						writeJSON(data, json_file)
+						placeDB(DB_FILENAME)
+		if not bot.executingRepetitiveTask:
+			bot.executingRepetitiveTask = True
+			for i in range(repeat):
+				if not bot.cancelledCommand:
+					await ctx.channel.send(genEspace())
+				else:
+					bot.cancelledCommand = False
+					break
+			if not bot.cancelledCommand:
+				bot.executingRepetitiveTask = False
+				bot.cancelledCommand = False
+		else:
+			await ctx.send("Déjà en traîn d'exécuter une commande répétitive")
+	elif guildHasThisPrefix(ctx.guild.id, ctx.prefix) and repeat > 5 and not hasPerms(ctx):
+		await ctx.send(ctx.author.mention + " vous n'avez pas le droit de répéter cette commande plus de cinq fois")
 	#await ctx.channel.send(random.choice(espaceEmojiList))
 
-@bot.command()
+@bot.command(pass_context=True)
 async def repeat(ctx, repeat, *, arg):
-	if not isMessageFromDM(ctx) and guildHasThisPrefix(ctx.guild.id, ctx.prefix):
+	if not isMessageFromDM(ctx) and guildHasThisPrefix(ctx.guild.id, ctx.prefix) and not bot.executingRepetitiveTask and hasPerms(ctx):
+		print("executingRepetitiveTask is: " + str(bot.executingRepetitiveTask))
+		bot.executingRepetitiveTask = True
+		print("setting executingRepetitiveTask True")
 		for i in range(int(repeat)):
-			await ctx.send(arg)
+			if not bot.cancelledCommand:
+				await ctx.send(arg)
+			else:
+				bot.cancelledCommand = False
+				break
+		if not bot.cancelledCommand:
+			bot.executingRepetitiveTask = False
+			bot.cancelledCommand = False
+			print("setting executingRepetitiveTask false")
+	elif bot.executingRepetitiveTask:
+		print("bruhissimo")
+		await ctx.send("Déjà en traîn d'exécuter une commande répétitive")
+
+@bot.command(pass_context=True)
+async def cancel(ctx):
+	if not isMessageFromDM(ctx) and guildHasThisPrefix(ctx.guild.id, ctx.prefix):
+		bot.cancelledCommand = True
+		bot.executingRepetitiveTask = False
+		await ctx.send("Commande répétitive précédente annulée")
 
 @bot.command()
 async def urban(ctx, *, arg):
@@ -397,7 +461,7 @@ async def urban(ctx, *, arg):
 				embed.set_author(name = "Définition du Dictionnaire Urbean:")
 			else:
 				embed.set_author(name = "Définition du Dictionnaire Urbain:")
-			embed.description = "**" + word + "**\n" + definition + "\n_" + example + "_\n\n" + contributor + "\n" + upvotes + ":thumbsup: " + downvotes + ":thumbsdown:"
+			embed.description = "[**" + word + "**](" + url + ")\n" + definition + "\n_" + example + "_\n\n" + contributor + "\n" + upvotes + ":thumbsup: " + downvotes + ":thumbsdown:"
 			await ctx.send(embed=embed)
 		else:
 			tryThese = soup.find_all("div", class_="try-these")[0]
