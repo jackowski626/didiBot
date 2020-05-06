@@ -11,7 +11,8 @@ import random
 import logging
 import math
 from functions import REMOTEFTPDB
-from types import MethodType
+import praw
+import discord
 
 class CustomCtx:
   def __init__(self, guild, user):
@@ -144,6 +145,29 @@ def strip(string, char=" "):
 			res += string[i]
 	return res
 
+#Looks like not necessary
+def parseWordForUrbanDictLink(word):
+	return word
+	res = []
+	for i in range(len(word)):
+		if word[i] == " ":
+			res.append("%20")
+		else:
+			res.append(word[i])
+	return "".join(res)
+
+def urbanDictParseContributor(contributor):
+	d = {"January":"janvier","February":"février","March":"mars","April":"avril","May":"mai","June":"juin","July":"juillet","August":"août","September":"septembre","October":"octobre","November":"novembre","December":"decembre"}
+	res = "par "
+	contributor = contributor[3:len(contributor)]
+	res += contributor[0:contributor.find(" ")] + ", le"
+	contributor = contributor[contributor.find(" "):len(contributor)]
+	contributor = contributor[1:len(contributor)]
+	res += contributor[contributor.find(" "):contributor.find(",")] + " "
+	res += d[contributor[0:contributor.find(" ")]]
+	res += contributor[contributor.find(",")+1:len(contributor)]
+	return res
+
 #31 lignes de 74 chars. 2294 chars
 
 """
@@ -187,7 +211,7 @@ def genEspace():
 		for char in chars:
 			if chars[char] >= randInt:
 				eligibleChars.append(char)
-		if len(eligibleChars) > 0:
+		if eligibleChars:
 			randInt = math.trunc(random.random()*len(eligibleChars))
 			print("len(eligibleChars: "+str(len(eligibleChars)))
 			print("randInt: "+str(randInt))
@@ -206,3 +230,35 @@ def fetchCoronaInfo(elementDict, elementType, countryName, embed):
 	embed.set_author(name = "Statistiques sur le Coronavirus en " + countryName + ", selon worldometers.info:")
 	embed.description = "‣ Nombre de cas en cours: **"+elementDict["active_cases"]+"**\n‣ Nombre de cas critiques: **"+elementDict["critical_cases"]+"**\n‣ Nombre de cas total: **"+elementDict["total_cases"]+"**\n‣ Nombre de nouveaux cas aujourd'hui: **"+elementDict["new_cases"]+"**\n‣ Nombre de guéris: **"+elementDict["total_recovered"]+"**\n‣ Nombre total de morts: **"+elementDict["total_deaths"]+"**\n‣ Nombre de nouvelles morts aujourd'hui: **"+elementDict["new_deaths"]+"**"
 	return embed
+
+def randomMeme(reddit):
+	embed = discord.Embed(colour = discord.Color.blue())
+	embed.set_author(name = "Dankmeme de hot")
+
+	subreddit = reddit.subreddit("dankmemes")
+	hot = subreddit.hot(limit=100)
+	randInt = math.trunc(random.random()*99)
+	targetPost = None
+	i = 0
+	for post in hot:
+		if i == randInt:
+			targetPost = post
+		i += 1
+	"""print("Title: " + targetPost.title)
+	print("Flair: " + str(targetPost.link_flair_text))
+	print("Author: u/" + targetPost.author.name)"""
+	embed.description = "**" + targetPost.title + "**" + "	:arrow_up: " + parsePostScore(targetPost.score)
+	if targetPost.link_flair_text:
+		embed.description += "\n_" + targetPost.link_flair_text + "_"
+	embed.description += "\nu/" + targetPost.author.name
+	embed.set_footer(text="From reddit.com/r/dankmemes")
+	embed.set_image(url=targetPost.url)
+	return embed
+
+def parsePostScore(score):
+	if score < 1000:
+		return str(score)
+	elif score < 999999:
+		return str("{:.2f}".format(score/1000))+"k"
+	else:
+		return str("{:.2f}".format(score/1000000))+"mio"

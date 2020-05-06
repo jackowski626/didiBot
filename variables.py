@@ -2,6 +2,8 @@ import pprint
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import os
+import praw
+from secret import *
 
 DEBUG = True
 LOCAL = False
@@ -24,7 +26,9 @@ if on_raspberry:
 	DB_FILENAME = "/home/pi/didibot/dididb.json"
 else:
 	DB_FILENAME = "./dididb.json"
+
 pp = pprint.PrettyPrinter(indent=4)
+reddit = praw.Reddit(client_id=client_id,client_secret=client_secret, user_agent=user_agent)
 
 if not LOCAL and not on_heroku and not on_raspberry:
 	print("not local")

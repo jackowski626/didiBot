@@ -19,9 +19,11 @@ from fuzzywuzzy import process
 from variables import *
 from functions import *
 
+from bs4 import BeautifulSoup
 from selenium import webdriver
 
 import sys
+import praw
 
 #logging.basicConfig(level=logging.DEBUG)
 
@@ -163,11 +165,6 @@ async def on_message(message):
 		else:
 			#downdoot
 			await message.add_reaction("⬇")
-	"""if message.content.lower() == "prefix":
-		if bot.command_prefix[len(bot.command_prefix)-1] == " ":
-			await message.channel.send("mon préfixe est "+bot.command_prefix+" (avec un espace à la fin)")
-		else:
-			await message.channel.send("mon préfixe est "+bot.command_prefix)"""
 	if message.author.id == authorID and isMessageFromDM(message) and stringBeginsWith(message.content, "relay"):
 		await bot.get_channel(defaultChannelID).send(message.content[5:len(message.content)])
 	await bot.process_commands(message)
@@ -176,13 +173,13 @@ async def on_message(message):
 		await message.channel.send("[" + message.author.display_name + "]: \n> " + message.content + "\n_MecPass™_")
 
 
-@bot.event
-async def on_member_update(before, after):
+##@bot.event
+##async def on_member_update(before, after):
 	#'activities','activity','add_roles','avatar','avatar_url','avatar_url_as','ban','block','bot','color','colour','create_dm','created_at','default_avatar','default_avatar_url','desktop_status','discriminator','display_name','dm_channel','edit','fetch_message','guild','guild_permissions','history','id','is_avatar_animated','is_blocked','is_friend','is_on_mobile','joined_at','kick','mention','mentioned_in','mobile_status','move_to','mutual_friends','name','nick','permissions_in','pins','premium_since','profile','relationship','remove_friend','remove_roles','roles','send','send_friend_request','status','system','top_role','trigger_typing','typing','unban','unblock','voice','web_status'
-	print("--------")
+	##print("--------")
 	#print(pp.pformat(dir(after)))
-	print(pp.pformat(after._user.display_name))
-	print(pp.pformat(after.status))
+	##print(pp.pformat(after._user.display_name))
+	##print(pp.pformat(after.status))
 	#if after.:
 		#pass
 
@@ -203,6 +200,8 @@ async def help(ctx):
 	embed.add_field(name="say", value="Fait répéter le bot ce qui suit la commande", inline=False)
 	embed.add_field(name="repeat", value="Fait répéter le bot ce qui suit la commande plusieurs fois\nExemple d'utilisation:\n_.repeat tg 420_", inline=False)
 	embed.add_field(name="espace", value="Remplit le chat d'étoiles ✦\nCette commande peut aussi être répétée comme ceci:\n_.espace 69_", inline=False)
+	embed.add_field(name="urban", value="Cherche le mot donné dans Urban Dictionnary\nExemple d'utilisation:\n_.urban hanus_", inline=False)
+	embed.add_field(name="dankmeme", value="Affiche un meme aléatoire parmi les 100 memes les plus hot de r/dankmemes", inline=False)
 	await ctx.author.send(embed=embed)
 
 @bot.command(pass_context=True)
@@ -211,13 +210,6 @@ async def perms(ctx):
 		for channel in ctx.guild.text_channels:
 			print("channel perms: "+pp.pformat(channel.permissions_for(ctx.guild.me)))
 			print("send_messages: "+pp.pformat(channel.permissions_for(ctx.guild.me).send_messages))
-
-#[Used for debugging] Command that logs the bot out
-"""@bot.command(name="s")
-async def on_message(ctx):
-	if not isMessageFromDM(ctx) and guildHasThisPrefix(ctx.guild.id, ctx.prefix) and hasPerms(ctx):
-		await ctx.send(random.choice(["Arrivederci", "Goodnight girl, I'll see you tomorrow", "last seen online: 6 years ago", "stop! you can't ju"]))
-		await bot.logout()"""
 
 @bot.command()
 async def say(ctx, *, arg):
@@ -323,14 +315,6 @@ async def corona(ctx, *, country=None):
 	async with ctx.typing():
 		if not isMessageFromDM(ctx) and guildHasThisPrefix(ctx.guild.id, ctx.prefix):
 			worldoMeterUrl = "https://www.worldometers.info/coronavirus/"
-			
-			#driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, options=options)
-			
-			"""if not driver:
-				driver = webdriver.Chrome("./chromedriver",options=options)"""
-			
-			"""else:
-				driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH)"""
 			driver.get(worldoMeterUrl)
 			print("initialized driver")
 			odds = driver.find_elements_by_class_name('odd')
@@ -388,6 +372,49 @@ async def repeat(ctx, repeat, *, arg):
 	if not isMessageFromDM(ctx) and guildHasThisPrefix(ctx.guild.id, ctx.prefix):
 		for i in range(int(repeat)):
 			await ctx.send(arg)
+
+@bot.command()
+async def urban(ctx, *, arg):
+	if not isMessageFromDM(ctx) and guildHasThisPrefix(ctx.guild.id, ctx.prefix):
+		url = "https://www.urbandictionary.com/define.php?term=" + parseWordForUrbanDictLink(arg)
+		print("url is: " + url)
+		page = requests.get(url)
+		soup = BeautifulSoup(page.content, 'html.parser')
+		panels = soup.find_all("div", class_="def-panel")
+		embed = discord.Embed(colour = discord.Color.blue())
+		embed.set_thumbnail(url="https://antisemitism.uk/wp-content/uploads/2020/02/Urban-Dictionary.png")
+		if len(panels) > 0:
+			panel = panels[0]
+			word = panel.find_next("a", class_="word").getText()
+			definition = panel.find_next("div", class_="meaning").getText()
+			example = panel.find_next("div", class_="example").getText()
+			contributor = panel.find_next("div", class_="contributor").getText()
+			contributor = urbanDictParseContributor(contributor)
+			thumbs = panel.find_next("div", class_="left thumbs")
+			upvotes = thumbs.find_next("a", class_="up").getText()
+			downvotes = thumbs.find_next("a", class_="down").getText()
+			if "bean" in word.lower() or "bean" in definition.lower():
+				embed.set_author(name = "Définition du Dictionnaire Urbean:")
+			else:
+				embed.set_author(name = "Définition du Dictionnaire Urbain:")
+			embed.description = "**" + word + "**\n" + definition + "\n_" + example + "_\n\n" + contributor + "\n" + upvotes + ":thumbsup: " + downvotes + ":thumbsdown:"
+			await ctx.send(embed=embed)
+		else:
+			tryThese = soup.find_all("div", class_="try-these")[0]
+			w1 = tryThese.find_next("li")
+			w2 = w1.find_next("li")
+			w3 = w2.find_next("li")
+			w4 = w3.find_next("li")
+			embed.set_author(name="Le mot \"" + arg + "\" n'a pas été trouvé")
+			embed.description = "**Vous vouliez peut-être rechercher un de ces mots:**\n‣ " + w1.getText() + "\n‣ " + w2.getText() + "\n‣ " + w3.getText() + "\n‣ " + w4.getText()
+			#await ctx.send("Le mot \"**" + arg + "**\" n'a pas été trouvé")
+			await ctx.send(embed=embed)
+
+@bot.command(pass_context=True)
+async def dankmeme(ctx, url = None):
+	await ctx.channel.send(embed=randomMeme(reddit))
+
+
 
 #@bot.command(pass_context=True)
 #async def s(ctx):
