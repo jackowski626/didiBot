@@ -384,9 +384,7 @@ async def corona(ctx, *, country=None):
 	#countries = ['China','Italy','USA','Spain','Germany','Iran','France','Switzerland','S. Korea','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Australia','Brazil','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria','China','Italy','USA','Spain','Germany','Iran','France','S. Korea','Switzerland','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Brazil','Australia','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria']
 	#country_dict = {'china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','switzerland':'switzerland','s. korea':'south-korea','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','australia':'brazil','brazil':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','s. korea':'south-korea','switzerland':'switzerland','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','brazil':'brazil','australia':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','america':'us','united kingdom':'uk', 'amerique':'us'}
 	embed = discord.Embed(colour = discord.Color.blue())
-	#embed.set_thumbnail(url="https://www.hubauer-bautzen.de/images/products/Large/10331.png")
-	f = discord.File('c:/Users/jacek/Documents/Didibot/images', filename='corona.png')
-	embed.set_thumbnail(url='attachment://corona.png')
+	embed.set_thumbnail(url='https://github.com/jackowski626/didiBot/blob/master/images/corona.png')
 	
 	#logging.debug(f"r: {r}")
 	if country:
@@ -416,7 +414,7 @@ async def corona(ctx, *, country=None):
 	#	await ctx.channel.send(f"Erreur, réponse vide. {random.choice(error_messages)}")
 	#embed.description = f"**Statistiques sur le Coronavirus en {selectedCountry['Country']}			**\n\n‣ Nombre de nouveaux cas confirmés: **{selectedCountry['NewConfirmed']}**\n‣ Nombre de cas confirmés total: **{selectedCountry['TotalConfirmed']}**\n‣ Nombre de nouvelles morts: **{selectedCountry['NewDeaths']}**\n‣ Nombre de morts total: **{selectedCountry['TotalDeaths']}**\n‣ Nombre de nouvelles guérisons: **{selectedCountry['NewRecovered']}**\n‣ Nombre de guérisons total: **{selectedCountry['TotalRecovered']}**"
 	#embed.set_footer(text=f"Date des résultats: {selectedCountry['Date'][0:10]}")
-	await ctx.channel.send(file=f, embed=embed)
+	await ctx.channel.send(embed=embed)
 #shuts the bot down
 @bot.command(pass_context=True)
 async def s(ctx):
