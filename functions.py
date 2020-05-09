@@ -1,139 +1,135 @@
-from variables import *
-from secret import *
-import ftplib
 from ftplib import FTP
-import json
-import pprint
-import copy
-import os
 import http.client
-import random
+import json
 import logging
 import math
-from functions import REMOTEFTPDB
-import praw
+import os
+import pprint
+import random
+import sys
+
 import discord
+import dotenv
+import praw
+import requests
+
+dotenv.load_dotenv()
+#logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+pp = pprint.PrettyPrinter(indent=4)
+
+is_db_remote = False
+remote_ftp_host = os.getenv('remote_db_ftp_host')
+remote_ftp_user = os.getenv('remote_db_ftp_user')
+remote_ftp_pw = os.getenv('remote_db_ftp_pw')
+remote_ftp_path = os.getenv('remote_db_ftp_path')
+
+def get_env_from_args():
+	hostDict = {
+		"local":"local machine",
+		"aws":"AWS",
+		"pi":"Raspberry Pi",
+		"heroku":"Heroku"
+	}
+	for arg in sys.argv:
+		if arg in hostDict:
+			logging.info(f"Running on {hostDict[arg]}")
+			return arg
+	raise SystemExit("Unknown host, please specify it as an argument. Available hosts: local, aws, pi, heroku")
+
+host = get_env_from_args()
+
+if host == "local":
+	is_db_remote = True
+	db_filename = os.getenv('local_db_filename')
+	chromedriver_path = os.getenv('local_chromedriver_path')
+elif host == "aws":
+	is_db_remote = True
+	db_filename = os.getenv('aws_db_filename')
+	chromedriver_path = os.getenv('aws_chromedriver_path')
+elif host == "pi":
+	db_filename = os.getenv('pi_db_filename')
+	chromedriver_path = os.getenv('pi_chromedriver_path')
+elif host == "heroku":
+	is_db_remote = True
+	db_filename = os.getenv('heroku_db_filename')
+	chromedriver_path = os.getenv('CHROMEDRIVER_PATH')
+
+def get_prefix(bot, message):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename, 'r') as json_file:
+			data = json.load(json_file)
+		#logging.DEBUG(f"prefix should be: {data['servers'][str(message.guild.id)]['prefix']}")
+		return data["servers"][str(message.guild.id)]['prefix']
 
 class CustomCtx:
   def __init__(self, guild, user):
   	self.guild = guild
   	self.author = user
 
-def grabDB(name):
-	if REMOTEFTPDB:
-		if DEBUG: print("grabDB("+name+")")
+def ftp_get(filename, host, path, user, pw):
+	if is_db_remote:
+		logging.debug(f"grabDB({filename})")
+		logging.debug(f"ftp_get args: filename: {filename}, host: {host}, path: {path}, user: {user}, pw: {pw}")
 		try:
-			ftp = FTP('ftpupload.net')
-		except:
-			print("error connecting to ftp")
-			return False
-		ftp.login(user = DB_USER, passwd = DB_PW)
-		ftp.cwd('/htdocs/didiBot')
-		filename = name
-		localfile = open(filename, 'wb')
-		ftp.retrbinary('RETR ' + filename, localfile.write, 1024)
-		ftp.quit()
-		localfile.close()
+			ftp = FTP(host)
+			ftp.login(user = user, passwd = pw)
+			ftp.cwd(path)
+			localfile = open(filename, 'wb')
+			ftp.retrbinary('RETR ' + filename, localfile.write, 1024)
+			ftp.quit()
+			localfile.close()
+			return True
+		except Exception as e:
+			logging.error(f"Error connecting to ftp: {pp.pformat(e)}")
+	else:
 		return True
 
 #Function that sends the bot configuration JSON file to a remote FTP location
-def placeDB(name):
-	if REMOTEFTPDB:
-		if DEBUG: print("placeDB("+name+")")
+def ftp_put(filename, host, path, user, pw):
+	if is_db_remote:
+		logging.debug(f"placeDB({filename})")
+		logging.debug(f"ftp_put args: filename: {filename}, host: {host}, path: {path}, user: {user}, pw: {pw}")
 		try:
-			ftp = FTP('ftpupload.net')
+			ftp = FTP(host)
+			ftp.login(user = user, passwd = pw)
+			ftp.cwd(path)
+			ftp.storbinary('STOR '+filename, open(filename, 'rb'))
+			ftp.quit()
+			return True
 		except:
-			print("error connecting to ftp")
-			return False
-		ftp.login(user = DB_USER, passwd = DB_PW)
-		ftp.cwd('/htdocs/didiBot')
-		filename = name
-		ftp.storbinary('STOR '+filename, open(filename, 'rb'))
-		ftp.quit()
-		return True
+			logging.error("Error connecting to ftp")
 
-def ftpGrab(name):
-	if DEBUG: print("ftpGrab("+name+")")
-	ftp = FTP('ftpupload.net')
-	ftp.login(user = DB_USER, passwd = DB_PW)
-	ftp.cwd('/htdocs/didiBot')
-	filename = name
-	localfile = open(filename, 'wb')
-	ftp.retrbinary('RETR ' + filename, localfile.write, 1024)
-	ftp.quit()
-	localfile.close()
-def ftpPlace(name):
-	if DEBUG: print("placeDB("+name+")")
-	ftp = FTP('ftpupload.net')
-	ftp.login(user = DB_USER, passwd = DB_PW)
-	ftp.cwd('/htdocs/didiBot')
-	filename = name
-	ftp.storbinary('STOR '+filename, open(filename, 'rb'))
-	ftp.quit()
-def writeJSON(data, json_file):
-	if DEBUG: print("writingJSON("+pp.pformat(data)+", "+pp.pformat(json_file)+")")
+def write_JSON(data, json_file):
+	logging.debug(f"writingJSON({pp.pformat(data)}, {pp.pformat(json_file)})")
 	json_file.seek(0)
 	json.dump(data, json_file, indent=4)
 	json_file.truncate()
 
-def hasPerms(ctx):
+def has_perms(ctx):
 	if ctx.author == ctx.guild.owner or ctx.author.id == 435446721485733908:
 		return True
-	grabDB(DB_FILENAME)
-	with open(DB_FILENAME) as json_file:
-		data = json.load(json_file)
-		for member in ctx.guild.members:
-			for role in member.roles:
-				if role.id in data["servers"][str(ctx.guild.id)]["privileged_roles"] and member.id == ctx.author.id:
-					return True
-	return False
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename) as json_file:
+			data = json.load(json_file)
+			for member in ctx.guild.members:
+				for role in member.roles:
+					if role.id in data["servers"][str(ctx.guild.id)]["privileged_roles"] and member.id == ctx.author.id:
+						return True
+		return False
 
 #Function that checks if the message was sent as direct message to the bot
-def isMessageFromDM(ctx):
+def ctx_is_dm(ctx):
 	if ctx.guild is None:
 		return True
 	return False
 
 #Function that pseudo-casts a string to boolean
-def toBool(val):
+def to_bool(val):
 	if str(val) == "True":
 		return True
 	return False
 
-#Functions that checks if the prefix which a command has been issued with is the prefix in a given guild
-def guildHasThisPrefix(guild_id, prefix):
-	guild_id = str(guild_id)
-	grabDB(DB_FILENAME)
-	with open(DB_FILENAME) as json_file:
-		data = json.load(json_file)
-		if prefix == data["servers"][guild_id]["prefix"]:
-			return True
-	return False
-
-#WIP #Function that checks if the user does not have a pending response to the bot (for example issued the host command but didn't respond to the bot)
-waitingResponsesDict = {"usersWaitingForNicknameConfirmation":"nom d'utilisateur Minecraft", "usersWaitingForFtpModeConfirmation":"mode ftp ou sftp","usersWaitingForFtpHostConfirmation":"hôte FTP","usersWaitingForFtpUserConfirmation":"nom d'utilisateur FTP","usersWaitingForFtpPasswordConfirmation":"mot de passe FTP","usersWaitingForFtpPathConfirmation":"chemin d'accès au fichier whitelist.json"}
-def hasPendingResponses(user_id, bot):
-	grabDB(DB_FILENAME)
-	with open(DB_FILENAME) as json_file:
-		data = json.load(json_file)
-		for server in data["servers"]:
-			for key in waitingResponsesDict:
-				if key == "usersWaitingForNicknameConfirmation" and user_id in data["servers"][server]["hasRespondedWithValidUname"]:
-					return False
-				if user_id in data["servers"][server][key]:
-					print("the user has pending stuff",waitingResponsesDict[key], bot.get_guild(int(server)).name)
-					return (waitingResponsesDict[key], bot.get_guild(int(server)).name)
-	return False
-
-def stringBeginsWith(haystack, needle):
-	if len(needle) > len(haystack):
-		return False
-	for i in range(len(needle) - 1):
-		if haystack[i] != needle[i]:
-			return False
-	return True
-
-def usableMention(mention):
+def usable_mention(mention):
 	res = ""
 	for i in range(len(mention)):
 		if mention[i] != "!":
@@ -147,31 +143,8 @@ def strip(string, char=" "):
 			res += string[i]
 	return res
 
-#Looks like not necessary
-def parseWordForUrbanDictLink(word):
-	return word
-	res = []
-	for i in range(len(word)):
-		if word[i] == " ":
-			res.append("%20")
-		else:
-			res.append(word[i])
-	return "".join(res)
 
-def urbanDictParseContributor(contributor):
-	d = {"January":"janvier","February":"février","March":"mars","April":"avril","May":"mai","June":"juin","July":"juillet","August":"août","September":"septembre","October":"octobre","November":"novembre","December":"decembre"}
-	res = "par "
-	contributor = contributor[3:len(contributor)]
-	res += contributor[0:contributor.find(" ")] + ", le"
-	contributor = contributor[contributor.find(" "):len(contributor)]
-	contributor = contributor[1:len(contributor)]
-	res += contributor[contributor.find(" "):contributor.find(",")] + " "
-	res += d[contributor[0:contributor.find(" ")]]
-	res += contributor[contributor.find(",")+1:len(contributor)]
-	return res
-
-#31 lignes de 74 chars. 2294 chars
-
+#works but things align too much to the left
 """
 def genEspace():
 	resList = []
@@ -184,7 +157,7 @@ def genEspace():
 	return ''.join(resList)
 """
 
-def genEspace():
+def gen_espace():
 	resList = []
 	chars = {
 		"✦":70,
@@ -215,8 +188,6 @@ def genEspace():
 				eligibleChars.append(char)
 		if eligibleChars:
 			randInt = math.trunc(random.random()*len(eligibleChars))
-			#print("len(eligibleChars: "+str(len(eligibleChars)))
-			#print("randInt: "+str(randInt))
 			resList.append(eligibleChars[randInt-1])
 		else:
 			resList.append(random.choice(["	", "　"]))
@@ -224,7 +195,7 @@ def genEspace():
 		resList.insert(i, '\n​' + u'\u200B' + "  ")
 	return ''.join(resList)
 
-def fetchCoronaInfo(elementDict, elementType, countryName, embed):
+def fetch_corona_info(elementDict, elementType, countryName, embed):
 	for k in elementDict:
 		elementDict[k] = elementType.find_element_by_xpath(elementDict[k]).text
 		if len(elementDict[k]) == 0:
@@ -233,33 +204,39 @@ def fetchCoronaInfo(elementDict, elementType, countryName, embed):
 	embed.description = "‣ Nombre de cas en cours: **"+elementDict["active_cases"]+"**\n‣ Nombre de cas critiques: **"+elementDict["critical_cases"]+"**\n‣ Nombre de cas total: **"+elementDict["total_cases"]+"**\n‣ Nombre de nouveaux cas aujourd'hui: **"+elementDict["new_cases"]+"**\n‣ Nombre de guéris: **"+elementDict["total_recovered"]+"**\n‣ Nombre total de morts: **"+elementDict["total_deaths"]+"**\n‣ Nombre de nouvelles morts aujourd'hui: **"+elementDict["new_deaths"]+"**"
 	return embed
 
-def randomMeme(reddit):
+def random_meme(reddit):
 	embed = discord.Embed(colour = discord.Color.blue())
 	embed.set_author(name = "Dankmeme de hot")
 	subreddit = reddit.subreddit("dankmemes")
 	hot = subreddit.hot(limit=100)
 	randInt = math.trunc(random.random()*99)
-	targetPost = None
+	target_post = None
 	i = 0
 	for post in hot:
 		if i == randInt:
-			targetPost = post
+			target_post = post
 		i += 1
-	"""print("Title: " + targetPost.title)
-	print("Flair: " + str(targetPost.link_flair_text))
-	print("Author: u/" + targetPost.author.name)"""
-	embed.description = "[**" + targetPost.title + "**](https://www.reddit.com"+targetPost.permalink+")" + "	:arrow_up: " + parsePostScore(targetPost.score)
-	if targetPost.link_flair_text:
-		embed.description += "\n_" + targetPost.link_flair_text + "_"
-	embed.description += "\nu/" + targetPost.author.name
+	if random.random()*100 > 98:
+		url = "https://www.youtube.com/watch?v=ub82Xb1C8os"
+	else:
+		url = f"https://www.reddit.com{target_post.permalink}"
+	embed.description = f"[**{target_post.title}**]({url})	:arrow_up: {parse_reddit_post_score(target_post.score)}"
+	if target_post.link_flair_text:
+		embed.description += "\n_" + target_post.link_flair_text + "_"
+	embed.description += "\nu/" + target_post.author.name
 	embed.set_footer(text="From reddit.com/r/dankmemes")
-	embed.set_image(url=targetPost.url)
+	embed.set_image(url=target_post.url)
 	return embed
 
-def parsePostScore(score):
+def parse_reddit_post_score(score):
 	if score < 1000:
 		return str(score)
 	elif score < 999999:
 		return str("{:.2f}".format(score/1000))+"k"
 	else:
 		return str("{:.2f}".format(score/1000000))+"mio"
+
+def parse_covid_num(num):
+	if num == 'None':
+		return '-'
+	return num

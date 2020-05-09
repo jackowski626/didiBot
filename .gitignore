@@ -1,0 +1,6 @@
+chromedriver
+*.exe
+*.deb
+*.bat
+local
+.env
