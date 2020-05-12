@@ -1,7 +1,0 @@
-- roulette, and vs roulette with points
-- the roulette gives a role that limits typing and speaking. It would be funny to move such a person to an empty voice channel
-	if she connects to one with people and move her again if ppl join. If all channels are taken, just yeet the person.
-- make a "subscribe" command which will send an embed each time a subbed channel uploads. If someone reacts with an
-	emote to the embed, the bot sends the video in pm
-- there should be a command for changing language but it should also work with an emoji
-- there should be some fake languages (twomad babaou) or languages modifiers (like uwu)
