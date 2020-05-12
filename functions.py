@@ -59,7 +59,12 @@ def get_prefix(bot, message):
 		with open(db_filename, 'r') as json_file:
 			data = json.load(json_file)
 		#logging.DEBUG(f"prefix should be: {data['servers'][str(message.guild.id)]['prefix']}")
-		return data["servers"][str(message.guild.id)]['prefix']
+		if not ctx_is_dm(message):
+			return data["servers"][str(message.guild.id)]['prefix']
+		else:
+			return '!'
+	else:
+		return '!'
 
 class CustomCtx:
   def __init__(self, guild, user):
@@ -195,37 +200,40 @@ def gen_espace():
 		resList.insert(i, '\n​' + u'\u200B' + "  ")
 	return ''.join(resList)
 
-def fetch_corona_info(elementDict, elementType, countryName, embed):
-	for k in elementDict:
-		elementDict[k] = elementType.find_element_by_xpath(elementDict[k]).text
-		if len(elementDict[k]) == 0:
-			elementDict[k] = "No info"
-	embed.set_author(name = "Statistiques sur le Coronavirus en " + countryName + ", selon worldometers.info:")
-	embed.description = "‣ Nombre de cas en cours: **"+elementDict["active_cases"]+"**\n‣ Nombre de cas critiques: **"+elementDict["critical_cases"]+"**\n‣ Nombre de cas total: **"+elementDict["total_cases"]+"**\n‣ Nombre de nouveaux cas aujourd'hui: **"+elementDict["new_cases"]+"**\n‣ Nombre de guéris: **"+elementDict["total_recovered"]+"**\n‣ Nombre total de morts: **"+elementDict["total_deaths"]+"**\n‣ Nombre de nouvelles morts aujourd'hui: **"+elementDict["new_deaths"]+"**"
-	return embed
+def parse_u_pdp_url(url):
+	if url.find("?width=") > 0:
+		return url[:url.find("?width=")]
+	else:
+		return url
 
-def random_meme(reddit):
+def random_meme(ctx, user_agent, client_id, client_secret):
 	embed = discord.Embed(colour = discord.Color.blue())
-	embed.set_author(name = "Dankmeme de hot")
-	subreddit = reddit.subreddit("dankmemes")
-	hot = subreddit.hot(limit=100)
+	r = requests.get('https://www.reddit.com/r/dankmemes/.json?limit=100', headers={"User-agent":user_agent, "client_id":client_id,"client_secret":client_secret})
+	res = r.json()
 	randInt = math.trunc(random.random()*99)
-	target_post = None
+	post = None
 	i = 0
-	for post in hot:
+	for element in res['data']['children']:
 		if i == randInt:
-			target_post = post
+			post = element
 		i += 1
 	if random.random()*100 > 98:
 		url = "https://www.youtube.com/watch?v=ub82Xb1C8os"
 	else:
-		url = f"https://www.reddit.com{target_post.permalink}"
-	embed.description = f"[**{target_post.title}**]({url})	:arrow_up: {parse_reddit_post_score(target_post.score)}"
-	if target_post.link_flair_text:
-		embed.description += "\n_" + target_post.link_flair_text + "_"
-	embed.description += "\nu/" + target_post.author.name
-	embed.set_footer(text="From reddit.com/r/dankmemes")
-	embed.set_image(url=target_post.url)
+		url = f"https://www.reddit.com{post['data']['permalink']}"
+		#print(url)
+	r = requests.get(f"https://www.reddit.com/u/{post['data']['author']}/about.json", headers={"User-agent"	:user_agent, "client_id":client_id,"client_secret":client_secret})
+	res_pdp = r.json()
+	embed.set_author(name = f"u/{post['data']['author']}", icon_url=parse_u_pdp_url(res_pdp['data']['icon_img']))
+	embed.description = f"[**{post['data']['title']}**]({url})\n{parse_reddit_post_score(post['data']['ups'])} <:updoot:709528623958327317>" #<:updoot:709528623958327317>
+	if post['data']['link_flair_text']:
+		embed.description += f"\n_{post['data']['link_flair_text']}_"
+	embed.set_footer(text=f"Number of awards: {post['data']['total_awards_received']}, upvote ratio: {post['data']['upvote_ratio']}")
+	embed.set_image(url=post['data']['url'])
+	r = requests.get(f'https://www.reddit.com/r/dankmemes/about.json', headers={"User-agent":user_agent, "client_id":client_id,"client_secret":client_secret})
+	res_sub_icon = r.json()
+	embed.set_thumbnail(url=res_sub_icon['data']['icon_img'])
+	print(parse_u_pdp_url(res_pdp['data']['icon_img']))
 	return embed
 
 def parse_reddit_post_score(score):
@@ -237,6 +245,52 @@ def parse_reddit_post_score(score):
 		return str("{:.2f}".format(score/1000000))+"mio"
 
 def parse_covid_num(num):
-	if num == 'None':
+	if not num:
 		return '-'
 	return num
+
+#vars = {'var1':'jour', 'var2':'bon'}
+#'string_to_translate':['{var2}', '{var1}', " Jean, ca va?"]
+#	=> "bonjour Jean, ca va?"
+def localize(ctx, string, vars = None, random = False):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename, 'r') as json_file:
+			data = json.load(json_file)
+			lang = data['servers'][str(ctx.guild.id)]['lang']
+		with open(f'./lang/{lang}.lang', 'r') as json_file:
+			lang_json = json.load(json_file)
+		if string == 'country_name':
+			return lang_json['countries'][vars['country']]['name']
+		elif string == 'country_declined':
+			print("vars: "+pp.pformat(vars))
+			if lang_json['countries'][vars['country']]['declined'] == '-':
+				print("declined is2: "+lang_json['countries'][vars['country']]['declined'])
+				return lang_json['countries'][vars['country']]['name']
+			else:
+				return lang_json['countries'][vars['country']]['declined']
+		elif string == 'country_prefix':
+			print("pre is: " +lang_json['countries'][vars['country']]['pre'])
+			return lang_json['countries'][vars['country']]['pre']
+		elif string == 'month_name':
+			return lang_json['months'][vars['month']]
+		elif vars:
+			print("vars: "+pp.pformat(vars))
+			res = []
+			for element in lang_json[string]:
+				if element[0] == '{':
+					res.append(vars[element[1:len(element)-1]])
+				else:
+					res.append(element)
+			return ''.join(str(elem) for elem in res)
+		else:
+			if random:
+				return random.choice(lang_json[string])
+			else:
+				return lang_json[string]
+
+def get_locale(ctx):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename, 'r') as json_file:
+			data = json.load(json_file)
+			return data['servers'][str(ctx.guild.id)]['lang']
+
