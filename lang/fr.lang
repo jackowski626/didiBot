@@ -51,5 +51,17 @@
 	"ud_did_you_mean":"**Vous vouliez peut-être rechercher un de ces mots:**",
 	"dank_meme_from_hot":"Dankmeme de hot",
 	"locale_not_found":"Cette langue n'a pas été trouvée. Exécutez la commande _locales_ pour afficher la liste de tous les codes de langage disponibles.",
-	"locale_has_been_changed":"La langue a été changée en français"
+	"locale_has_been_changed":"La langue a été changée en français",
+	"available_locales":["Codes de langage disponibles:\n> ", "{codes}"],
+	"available_modifiers":["Modificateurs de langage disponibles:\n> ", "{modifiers}"],
+	"number_of_awards":"Nombre de récompenses:",
+	"upvote_ratio":"ratio de upvotes:",
+	"modifier_not_found":"Ce modificateur n'a pas été trouvé. Exécutez la commande _modifiers_ pour afficher les modificateurs de langue disponibles",
+	"roulette_ban_message":"Pas de chance aujourd'hui on dirait. Cheh",
+	"almost_banned":"T'as eu de la chance cette fois",
+	"user_banned":["Oups, comme c'est triste, ", "{mention}", " s'est fait point ban"],
+	"user_got_rouletted":["{mention}", " a perdu. Il s'est fait _rouletted_ pour une heure"],
+	"mention_at_least_one_user":"Veuillez mentionner au moins un utilisateur",
+	"vs_roulette_challenge_author":"Défi roulette",
+	"vs_roulette_challenge_description":["Je défie ", "{challenged}", " dans un défi roulette!\nRéagissez avec \u2705 pour accepter le défi ou avec \u174C pour le rejeter. Le défieur peut annuler le défi avec \u1F6AB.. Les perdants ne pourront pas parler pendant une heure et les mots de leurs messages seront mélangés"]
 }

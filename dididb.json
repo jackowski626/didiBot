@@ -1,0 +1,45 @@
+{
+    "servers": {
+        "123412341234123412": {
+            "server_id": 123412341234123412,
+            "prefix": ";",
+            "lang": "fr",
+            "privileged_roles": [
+                123412341234123412,
+                123412341234123412
+            ],
+            "userStatusChannel": "none",
+            "statusMessagesReservedToPrivileged": "False",
+            "greetedUsers": [],
+            "notDisturbUsers": [],
+            "goodbyedUsers": [],
+            "lastUsedEspace": {
+                "567856785678567856": 1588767805.753036,
+                "567856785678567856": 1588767997.208232
+            },
+            "default_corona_country": "Switzerland",
+            "lang_modifier": "none",
+            "roulette_challenge_messages":[],
+            "got_rouletted_timestamps":{},
+            "roulette_vs_scores":{}
+        },
+        "123412341234123412": {
+            "server_id": 123412341234123412,
+            "prefix": "!",
+            "lang": "en",
+            "privileged_roles": [
+                123412341234123412
+            ],
+            "statusMessagesReservedToPrivileged": "False",
+            "greetedUsers": [],
+            "notDisturbUsers": [],
+            "goodbyedUsers": [],
+            "lastUsedEspace": {},
+            "default_corona_country": "China",
+            "lang_modifier": "uwu",
+            "roulette_challenge_messages":[],
+            "got_rouletted_timestamps":{},
+            "roulette_vs_scores":{}
+        }
+    }
+}

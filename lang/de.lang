@@ -50,6 +50,18 @@
 	"ud_not_found":["Das Wort \"", "{word}", "\" wurde nicht gefunden"],
 	"ud_did_you_mean":"**Sie meinten vielleicht eines von diesen Wörter:**",
 	"dank_meme_from_hot":"Dankmeme von Hot",
-	"locale_not_found":"Diese Sprache wurde nicht gefunden. Führen sie den _locales_ Befehl aus um die Liste von verfügbaren Gebietsschemacodes anzuzeigen.",
-	"locale_has_been_changed":"Die Sprache wurde auf Deutsch gewechselt"
+	"locale_not_found":"Diese Sprache wurde nicht gefunden. Rufen Sie den _locales_ Befehl aus um die Liste von verfügbaren Gebietsschemacodes anzuzeigen",
+	"modifier_not_found":"Dieser Modifikator wurde nicht gefunden. Rufen Sie den _modifiers_ Befehl um die Liste von verfügbaren Sprachemodifikatoren anzuzeigen",
+	"locale_has_been_changed":"Die Sprache wurde auf Deutsch gewechselt",
+	"available_locales":["Verfügbare Gebietsschemacodes:\n> ", "{codes}"],
+	"available_modifiers":["Verfügbare Sprachemodifikatoren:\n> ", "{modifiers}"],
+	"number_of_awards":"Anzahl der Auszeichnungen:",
+	"upvote_ratio":"Upvote Ratio:",
+	"roulette_ban_message":"Wohl kein Glück heute, oder?",
+	"almost_banned":"Puh, wurdest fast gebannt",
+	"user_banned":["Hah, kein Glück, ", "{mention}", " wurde gebannt"],
+	"user_got_rouletted":["{mention}", " hat verloren. Er ist _rouletted_ für eine Stunde"],
+	"mention_at_least_one_user":"Erwähnen sie bitte mindestens einen Bnutzer",
+	"vs_roulette_challenge_author":"Rouletteherausforderung",
+	"vs_roulette_challenge_description":["Ich fordere ", "{challenged}", " in einer Rouletteherausforderung aus!\nReagiere mit \u2705 um die Herausforderung zu akzeptieren oder mit \u174C um sie zu abzulehnen. Der Herausforderer kann die Herausforderung mit \u1F6AB absagen. Die verlierer werden wärend einer Stunde nicht sprechen können und ihre Nachrichten werden gemischt sein"]
 }

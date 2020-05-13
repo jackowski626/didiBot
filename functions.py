@@ -122,6 +122,11 @@ def has_perms(ctx):
 						return True
 		return False
 
+def is_owner(ctx):
+	if ctx.author.id == 435446721485733908:
+		return True
+	return False
+
 #Function that checks if the message was sent as direct message to the bot
 def ctx_is_dm(ctx):
 	if ctx.guild is None:
@@ -206,17 +211,22 @@ def parse_u_pdp_url(url):
 	else:
 		return url
 
-def random_meme(ctx, user_agent, client_id, client_secret):
+def random_meme(ctx, user_agent, client_id, client_secret, link=None):
 	embed = discord.Embed(colour = discord.Color.blue())
-	r = requests.get('https://www.reddit.com/r/dankmemes/.json?limit=100', headers={"User-agent":user_agent, "client_id":client_id,"client_secret":client_secret})
-	res = r.json()
-	randInt = math.trunc(random.random()*99)
 	post = None
-	i = 0
-	for element in res['data']['children']:
-		if i == randInt:
-			post = element
-		i += 1
+	if not link:
+		r = requests.get('https://www.reddit.com/r/dankmemes/.json?limit=100', headers={"User-agent":user_agent, "client_id":client_id,"client_secret":client_secret})
+		res = r.json()
+		randInt = math.trunc(random.random()*99)
+		i = 0
+		for element in res['data']['children']:
+			if i == randInt:
+				post = element
+			i += 1
+	else:
+		r = requests.get(f'{link}.json', headers={"User-agent":user_agent, "client_id":client_id,"client_secret":client_secret})
+		res = r.json()
+		post = res[0]['data']['children'][0]
 	if random.random()*100 > 98:
 		url = "https://www.youtube.com/watch?v=ub82Xb1C8os"
 	else:
@@ -228,7 +238,7 @@ def random_meme(ctx, user_agent, client_id, client_secret):
 	embed.description = f"[**{post['data']['title']}**]({url})\n{parse_reddit_post_score(post['data']['ups'])} <:updoot:709528623958327317>" #<:updoot:709528623958327317>
 	if post['data']['link_flair_text']:
 		embed.description += f"\n_{post['data']['link_flair_text']}_"
-	embed.set_footer(text=f"Number of awards: {post['data']['total_awards_received']}, upvote ratio: {post['data']['upvote_ratio']}")
+	embed.set_footer(text=f"{localize(ctx, 'number_of_awards')} {post['data']['total_awards_received']}, {localize(ctx, 'upvote_ratio')} {post['data']['upvote_ratio']}")
 	embed.set_image(url=post['data']['url'])
 	r = requests.get(f'https://www.reddit.com/r/dankmemes/about.json', headers={"User-agent":user_agent, "client_id":client_id,"client_secret":client_secret})
 	res_sub_icon = r.json()
@@ -254,39 +264,66 @@ def parse_covid_num(num):
 #	=> "bonjour Jean, ca va?"
 def localize(ctx, string, vars = None, random = False):
 	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		modifier = None
 		with open(db_filename, 'r') as json_file:
 			data = json.load(json_file)
 			lang = data['servers'][str(ctx.guild.id)]['lang']
+			if data['servers'][str(ctx.guild.id)]['lang_modifier'] != 'none':
+				modifier = data['servers'][str(ctx.guild.id)]['lang_modifier']
 		with open(f'./lang/{lang}.lang', 'r') as json_file:
 			lang_json = json.load(json_file)
 		if string == 'country_name':
-			return lang_json['countries'][vars['country']]['name']
+			if not modifier:
+				return lang_json['countries'][vars['country']]['name']
+			elif modifier == 'uwu':
+				return lang_json['countries'][vars['country']]['name'].replace('r', 'w').replace('R', 'W')
 		elif string == 'country_declined':
 			print("vars: "+pp.pformat(vars))
 			if lang_json['countries'][vars['country']]['declined'] == '-':
 				print("declined is2: "+lang_json['countries'][vars['country']]['declined'])
-				return lang_json['countries'][vars['country']]['name']
+				if not modifier:
+					return lang_json['countries'][vars['country']]['name']
+				elif modifier == 'uwu':
+					return lang_json['countries'][vars['country']]['name'].replace('r', 'w').replace('R', 'W')
 			else:
-				return lang_json['countries'][vars['country']]['declined']
+				if not modifier:
+					return lang_json['countries'][vars['country']]['declined']
+				elif modifier == 'uwu':
+					return lang_json['countries'][vars['country']]['declined'].replace('r', 'w').replace('R', 'W')
 		elif string == 'country_prefix':
-			print("pre is: " +lang_json['countries'][vars['country']]['pre'])
-			return lang_json['countries'][vars['country']]['pre']
+			#print("pre is: " +lang_json['countries'][vars['country']]['pre'])
+			if not modifier:
+				return lang_json['countries'][vars['country']]['pre']
+			elif modifier == 'uwu':
+				return lang_json['countries'][vars['country']]['pre'].replace('r', 'w').replace('R', 'W')
 		elif string == 'month_name':
-			return lang_json['months'][vars['month']]
+			if not modifier:
+				return lang_json['months'][vars['month']]
+			elif modifier == 'uwu':
+				return lang_json['months'][vars['month']].replace('r', 'w').replace('R', 'W')
 		elif vars:
-			print("vars: "+pp.pformat(vars))
+			#print("vars: "+pp.pformat(vars))
 			res = []
 			for element in lang_json[string]:
 				if element[0] == '{':
 					res.append(vars[element[1:len(element)-1]])
 				else:
 					res.append(element)
-			return ''.join(str(elem) for elem in res)
+			if not modifier:
+				return ''.join(str(elem) for elem in res)
+			elif modifier == 'uwu':
+				return ''.join(str(elem) for elem in res).replace('r', 'w').replace('R', 'W')
 		else:
 			if random:
-				return random.choice(lang_json[string])
+				if not modifier:
+					return random.choice(lang_json[string])
+				elif modifier == 'uwu':
+					return random.choice(lang_json[string]).replace('r', 'w').replace('R', 'W')
 			else:
-				return lang_json[string]
+				if not modifier:
+					return lang_json[string]
+				elif modifier == 'uwu':
+					return lang_json[string].replace('r', 'w').replace('R', 'W')
 
 def get_locale(ctx):
 	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
@@ -294,3 +331,15 @@ def get_locale(ctx):
 			data = json.load(json_file)
 			return data['servers'][str(ctx.guild.id)]['lang']
 
+def get_modifier(ctx):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename, 'r') as json_file:
+			data = json.load(json_file)
+			return data['servers'][str(ctx.guild.id)]['lang_modifier']
+
+def apply_lang_modifier(ctx, message):
+	modifier = get_modifier(ctx)
+	if modifier == 'uwu':
+		return message.replace('r', 'w').replace('R', 'W')
+	else:
+		return message

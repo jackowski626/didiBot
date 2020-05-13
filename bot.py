@@ -1,4 +1,5 @@
 #invite: https://discordapp.com/api/oauth2/authorize?client_id=659120033519108115&permissions=2147482867&scope=bot
+#invite admin (preferred): https://discord.com/api/oauth2/authorize?client_id=659120033519108115&permissions=8&scope=bot
 import copy
 import datetime
 import http.client
@@ -92,6 +93,7 @@ motd_url = os.getenv('motd_url')
 corona_image_url = os.getenv('corona_image_url')
 urban_dict_image_url = os.getenv('urban_dict_image_url')
 valid_locales = ['de', 'en', 'fr', 'pl']
+valid_lang_modifiers = ['uwu']
 
 bot = commands.Bot(command_prefix = fn.get_prefix)
 bot.remove_command("help")
@@ -120,7 +122,7 @@ async def on_guild_join(guild):
 		with open(db_filename, 'r+') as json_file:
 			data = json.load(json_file)
 			#Add a new server entry to the json
-			data["servers"][str(guild.id)] = {"server_id":guild.id,"prefix":default_prefix,"lang":"en","privileged_roles":[],"statusMessagesReservedToPrivileged":"False","greetedUsers": [],"notDisturbUsers": [],"goodbyedUsers": [],"lastUsedEspace": {}, "default_corona_country":"China"}
+			data["servers"][str(guild.id)] = {"server_id":guild.id,"prefix":default_prefix,"lang":"en","lang_modofier":"none","privileged_roles":[],"statusMessagesReservedToPrivileged":"False","greetedUsers": [],"notDisturbUsers": [],"goodbyedUsers": [],"lastUsedEspace": {}, "default_corona_country":"China","roulette_challenge_messages":[],"got_rouletted_timestamps":{},"roulette_vs_scores":{}}
 			#Send message which pings a role with admin privileges and says that the bot should be configured
 			validRole = None
 			for role in guild.roles:
@@ -219,6 +221,13 @@ async def on_message(message):
 		await message.channel.send(f"[{message.author.display_name}]: \n> {message.content}\n_MecPass™_")
 	if fuzz.ratio(message.content.lower(), 'rape me') > 80:
 		await message.channel.send(fn.localize(message, "stfu"))
+	if message.content.startswith('https://www.reddit.com/r/dankmemes/comments'):
+		await message.edit(content=None, embed=fn.random_meme(message, user_agent, client_id, client_secret, message.content[:message.content.find(' ')]))
+
+@bot.event
+async def on_raw_reaction_add(reaction):
+	if reaction.user_id == bot.user.id:
+		return
 
 ##@bot.event
 ##async def on_member_update(before, after):
@@ -255,7 +264,7 @@ async def help(ctx):
 @bot.command()
 async def say(ctx, *, arg):
 	if fn.has_perms(ctx):
-		await ctx.send(arg)
+		await ctx.send(fn.apply_lang_modifier(ctx, arg))
 
 @bot.command()
 async def motd(ctx, *, motd=None):
@@ -428,10 +437,10 @@ async def corona(ctx, *, country=None):
 @bot.command(pass_context=True)
 async def s(ctx):
     if ctx.author.id == author_id:
-        await ctx.channel.send(random.choice(random_goodbye))
+        await ctx.channel.send(fn.apply_lang_modifier(ctx, random.choice(random_goodbye)))
         await bot.logout()
     elif ctx.author.id != author_id:
-    	await ctx.channel.send(fn.localize(ctx, 't_as_cru'))
+    	await ctx.channel.send(fn.apply_lang_modifier(ctx, fn.localize(ctx, 't_as_cru')))
 
 @bot.command(pass_context=True)
 async def espace(ctx, repeat = 1):
@@ -485,7 +494,7 @@ async def repeat(ctx, repeat, *, arg):
 		logging.debug("setting bot.executing_repetitive_task True")
 		for i in range(int(repeat)):
 			if not bot.cancelled_command:
-				await ctx.send(arg)
+				await ctx.send(fn.apply_lang_modifier(ctx, arg))
 			else:
 				bot.cancelled_command = False
 				break
@@ -576,6 +585,12 @@ async def lang(ctx, lang, modifier=None):
 				with open(db_filename, 'r+') as json_file:
 					data = json.load(json_file)
 					data['servers'][str(ctx.guild.id)]['lang'] = lang
+					if modifier and modifier in valid_lang_modifiers:
+						data['servers'][str(ctx.guild.id)]['lang_modifier'] = modifier
+					elif modifier and modifier not in valid_lang_modifiers:
+						await ctx.send(fn.localize(ctx, "modifier_not_found"))
+					elif not modifier:
+						data['servers'][str(ctx.guild.id)]['lang_modifier'] = "none"
 					fn.write_JSON(data, json_file)
 			fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
 			await ctx.send(fn.localize(ctx, "locale_has_been_changed"))
@@ -584,6 +599,71 @@ async def lang(ctx, lang, modifier=None):
 	else:
 		await ctx.send(fn.localize(ctx, '"you_dont_have_perms"'))
 
+@bot.command(pass_context = True)
+async def roulette(ctx):
+	if random.randint(0, 20) == 20:
+		await ctx.send(fn.localize(ctx, "user_banned"))
+		await discord.Member.ban(ctx.author, reason=fn.localize(ctx, "roulette_ban_message", vars={'mention':ctx.author.mention}), delete_message_days=0)
+	else:
+		await ctx.send(fn.localize(ctx, "almost_banned"))
+
+@bot.command(pass_context = True)
+async def roulette_vs(ctx, mention):
+	if len(ctx.message.mentions) == 0:
+		await ctx.send(fn.localize(ctx, "mention_at_least_one_user"))
+	else:
+		embed = discord.Embed(colour = discord.Color.blue())
+		embed.set_author(name = fn.localize(ctx, 'vs_roulette_challenge_author'))
+		embed.description = fn.localize(ctx, 'vs_roulette_challenge_description', vars={'challenged':", ".join(ctx.message.mentions)})
+		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+			with open(db_filename, 'r+') as json_file:
+				data = json.load(json_file)
+				data['servers'][str(ctx.guild.id)]['roulette_challenge_messages'].append(ctx.message.id)
+				fn.write_JSON(data, json_file)
+		fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+		await ctx.message.edit(content=None, embed=embed)
+		await ctx.message.add_reaction("✅")
+
+"""else:
+	got_rouletted_exists = False
+	for role in ctx.guild.roles:
+		if role.name == 'got rouletted':
+			got_rouletted_exists = True
+			break
+	if not got_rouletted_exists:
+		await ctx.guild.create_role(name='got rouletted', hoist=True, mentionable=False)
+	got_rouletted_role = None
+	for role in ctx.guild.roles:
+		if role.name == 'got rouletted':
+			got_rouletted_role = role
+	users_to_roll = []
+	for user in ctx.message.mentions:
+		users_to_roll.append(user)
+	users_to_roll.append(ctx.author)
+	for i in range(len(users_to_roll)-1):
+		await discord.Member.add_roles(random.choice(users_to_roll), got_rouletted_role)"""
+
+@bot.command(pass_context = True)
+async def rem_rouletted(ctx):
+	if fn.is_owner(ctx):
+		got_rouletted_role = None
+		for role in ctx.guild.roles:
+			if role.name == 'got rouletted':
+				got_rouletted_role = role
+		for user in ctx.message.mentions:
+			await discord.Member.remove_roles(user, got_rouletted_role)
+	else:
+		await ctx.send(fn.localize(ctx, "t_as_cru"))
+
+@bot.command(pass_context = True)
+async def locales(ctx):
+	await ctx.send(fn.localize(ctx, "available_locales", vars={'codes':", ".join(valid_locales)}))
+
+@bot.command(pass_context = True)
+async def modifiers(ctx):
+	await ctx.send(fn.localize(ctx, "available_modifiers", vars={'modifiers':", ".join(valid_lang_modifiers)}))
+	
+		
 #@bot.command(pass_context=True)
 #async def s(ctx):
 
