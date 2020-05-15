@@ -664,13 +664,14 @@ async def cr(ctx):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
 		fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
+		message = ctx.message.content[len(ctx.command.name) + 2:]
 		non_privileged_can_add = False
 		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 				with open(db_filename, 'r+') as json_file:
 					data = json.load(json_file)
 					if data['servers'][str(ctx.guild.id)]['commands']['cr']['add_new_privileged'] == 'true':
 						non_privileged_can_add = True
-		if message.startswith('-learn') and (has_perms(ctx) or non_privileged_can_add):
+		if message.startswith('-learn') and (fn.has_perms(ctx) or non_privileged_can_add):
 			trick = message[7:message.find(' -')]
 			response = message[message.find('-response')+10:]
 			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
@@ -679,7 +680,7 @@ async def cr(ctx):
 					data['servers'][str(ctx.guild.id)]['commands']['cr']['tricks'][trick] = response
 					fn.write_JSON(data, json_file)
 			fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
-		elif message.startswith('-unlearn') and fn.cmd_enabled('cr') and has_perms(ctx):
+		elif message.startswith('-unlearn') and fn.cmd_enabled('cr') and fn.has_perms(ctx):
 			trick = message[9:]
 			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 				with open(db_filename, 'r+') as json_file:
