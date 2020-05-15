@@ -38,18 +38,21 @@ def get_env_from_args():
 
 host = get_env_from_args()
 
-if host == "local":
+lang_path = ''
+
+if host == 'local':
 	is_db_remote = True
 	db_filename = os.getenv('local_db_filename')
 	chromedriver_path = os.getenv('local_chromedriver_path')
-elif host == "aws":
-	is_db_remote = True
+elif host == 'aws':
+	is_db_remote = False
 	db_filename = os.getenv('aws_db_filename')
 	chromedriver_path = os.getenv('aws_chromedriver_path')
-elif host == "pi":
+	lang_path = os.getenv('aws_lang_path')
+elif host == 'pi':
 	db_filename = os.getenv('pi_db_filename')
 	chromedriver_path = os.getenv('pi_chromedriver_path')
-elif host == "heroku":
+elif host == 'heroku':
 	is_db_remote = True
 	db_filename = os.getenv('heroku_db_filename')
 	chromedriver_path = os.getenv('CHROMEDRIVER_PATH')
@@ -87,6 +90,7 @@ def ftp_get(filename, host, path, user, pw):
 		except Exception as e:
 			logging.error(f"Error connecting to ftp: {pp.pformat(e)}")
 	else:
+		#print("db not remote, returning true")
 		return True
 
 #Function that sends the bot configuration JSON file to a remote FTP location
@@ -118,9 +122,22 @@ def has_perms(ctx):
 			data = json.load(json_file)
 			for member in ctx.guild.members:
 				for role in member.roles:
-					if role.id in data["servers"][str(ctx.guild.id)]["privileged_roles"] and member.id == ctx.author.id:
+					if role.id in data['servers'][str(ctx.guild.id)]['privileged_roles'] and member.id == ctx.author.id:
 						return True
 		return False
+
+def can_ex_cmd(ctx):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename) as json_file:
+			data = json.load(json_file)
+			if data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['privileged'] == 'false' or has_perms(ctx):
+				if data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['enabled'] == 'true':
+					return True
+				else:
+					return False
+			else:
+				return False
+	return False
 
 def is_owner(ctx):
 	if ctx.author.id == 435446721485733908:
@@ -235,9 +252,12 @@ def random_meme(ctx, user_agent, client_id, client_secret, link=None):
 	r = requests.get(f"https://www.reddit.com/u/{post['data']['author']}/about.json", headers={"User-agent"	:user_agent, "client_id":client_id,"client_secret":client_secret})
 	res_pdp = r.json()
 	embed.set_author(name = f"u/{post['data']['author']}", icon_url=parse_u_pdp_url(res_pdp['data']['icon_img']))
-	embed.description = f"[**{post['data']['title']}**]({url})\n{parse_reddit_post_score(post['data']['ups'])} <:updoot:709528623958327317>" #<:updoot:709528623958327317>
+	if link:
+		embed.description = f"{localize(ctx, 'meme_issued_by', vars={'issuer':ctx.author.mention})}\n[**{post['data']['title']}**]({url})\n{parse_reddit_post_score(post['data']['ups'])} <:updoot:709528623958327317>" #<:updoot:709528623958327317>
+	else:
+		embed.description = f"[**{post['data']['title']}**]({url})\n{parse_reddit_post_score(post['data']['ups'])} <:updoot:709528623958327317>"
 	if post['data']['link_flair_text']:
-		embed.description += f"\n_{post['data']['link_flair_text']}_"
+		embed.description += f"\n_{translate_emoji(post['data']['link_flair_text'])}_"
 	embed.set_footer(text=f"{localize(ctx, 'number_of_awards')} {post['data']['total_awards_received']}, {localize(ctx, 'upvote_ratio')} {post['data']['upvote_ratio']}")
 	embed.set_image(url=post['data']['url'])
 	r = requests.get(f'https://www.reddit.com/r/dankmemes/about.json', headers={"User-agent":user_agent, "client_id":client_id,"client_secret":client_secret})
@@ -270,7 +290,7 @@ def localize(ctx, string, vars = None, random = False):
 			lang = data['servers'][str(ctx.guild.id)]['lang']
 			if data['servers'][str(ctx.guild.id)]['lang_modifier'] != 'none':
 				modifier = data['servers'][str(ctx.guild.id)]['lang_modifier']
-		with open(f'./lang/{lang}.lang', 'r') as json_file:
+		with open(f'{lang_path}{lang}.lang', 'r') as json_file:
 			lang_json = json.load(json_file)
 		if string == 'country_name':
 			if not modifier:
@@ -343,3 +363,61 @@ def apply_lang_modifier(ctx, message):
 		return message.replace('r', 'w').replace('R', 'W')
 	else:
 		return message
+
+#for testing purposes only. Can only be executed by the owner of the bot.
+def crash(ctx):
+	if is_owner(ctx):
+	    try:
+	        crash(ctx)
+	    except:
+	        crash(ctx)
+
+def translate_emoji(string): #TODO
+	for i in range(len(string)):
+		if string[i] == ':' and string[i+1:].find(':') != -1:
+			with open(f'{lang_path}emojis.lang', 'r') as json_file:
+				emoji_json = json.load(json_file)
+				print(f"looking for emoji {string[i+1:string.find(':')]}")
+				for key in emoji_json:
+					if key == string[i+1:string.find(':')]:
+						print("found emoji")
+						break
+	return string
+
+#.cmd -privileged true
+def set_privilege(ctx):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename, 'r+') as json_file:
+			data = json.load(json_file)
+			res_bool = ctx.message[14 + len(ctx.command.name):]
+			if res_bool == 'true':
+				data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['privileged'] = 'true'
+			elif res_bool == 'false':
+				data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['privileged'] = 'false'
+			write_JSON(data, json_file)
+		ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+
+def enable_cmd(ctx):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename, 'r+') as json_file:
+			data = json.load(json_file)
+			data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['enabled'] = 'true'
+			write_JSON(data, json_file)
+		ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+
+def disable_cmd(ctx):
+	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+		with open(db_filename, 'r+') as json_file:
+			data = json.load(json_file)
+			data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['enabled'] = 'false'
+			write_JSON(data, json_file)
+		ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+
+def shared_cmd_actions(ctx):
+	msg = ctx.message.content[len(ctx.command.name)+2:]
+	if msg.startswith('-privileged') and has_perms(ctx):
+		set_privilege(ctx)
+	elif msg.startswith('-enable') and has_perms(ctx):
+		enable_cmd(ctx)
+	elif msg.startswith('-disable') and has_perms(ctx):
+		disable_cmd(ctx)

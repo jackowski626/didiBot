@@ -42,7 +42,7 @@
 	"t_as_cru":"Taa, chciałbyś",
 	"you_must_wait_before_cmd_use":["{mention}", " musisz jeszcze poczekać ", "{minutes}", " minut(y) zanim będziesz ponownie wydać to polecenie"],
 	"already_executing_repetitive_task":"Już wykonuje powtarzające się polecenie",
-	"you_cant_ex_cmd_more_five_times":["{mention}", "nie posiadasz uprawnień by wydać to polecenie więcej niż pięć razy"],
+	"you_cant_ex_cmd_more_five_times":["{mention}", " nie posiadasz uprawnień by wydać to polecenie więcej niż pięć razy"],
 	"command_canceled":"Polecenie anulowane",
 	"ud_def_bean":"Definicja według Słownika Miejskiego:",
 	"ud_def":"Definicja według Słownika Miejskiego:",

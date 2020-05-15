@@ -21,25 +21,143 @@
             "lang_modifier": "none",
             "roulette_challenge_messages":[],
             "got_rouletted_timestamps":{},
-            "roulette_vs_scores":{}
-        },
-        "123412341234123412": {
-            "server_id": 123412341234123412,
-            "prefix": "!",
-            "lang": "en",
-            "privileged_roles": [
-                123412341234123412
-            ],
-            "statusMessagesReservedToPrivileged": "False",
-            "greetedUsers": [],
-            "notDisturbUsers": [],
-            "goodbyedUsers": [],
-            "lastUsedEspace": {},
-            "default_corona_country": "China",
-            "lang_modifier": "uwu",
-            "roulette_challenge_messages":[],
-            "got_rouletted_timestamps":{},
-            "roulette_vs_scores":{}
+            "roulette_vs_scores":{},
+            "commands": {
+                "cr": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false",
+                    "can_mention": "true",
+                    "add_new_privileged": "true",
+                    "tricks": {
+                        "meilleur modpack": "GT:NH",
+                        "mathias": "tg <@!478855427564634112>, ton proco pue la merde",
+                        "jimmy": "https://www.youtube.com/watch?v=OioxvNbrMmM",
+                        "beta": "https://www.twitch.tv/directory/game/VALORANT",
+                        "hello": "hi there"
+                    }
+                },
+                "say": {
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false",
+                    "can_mention": "true"
+                },
+                "motd": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false",
+                    "can_mention": "true"
+                },
+                "complimente": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "add_privileged": {
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "remove_privileged": {
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "set_prefix": {
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "corona": {
+                    "aliases": [
+                        "coronal",
+                        "plague"
+                    ],
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "espace": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false",
+                    "limit_non_privileged_users": "true",
+                    "non_privileged_use_limit": 5,
+                    "non_privileged_cooldown": 5
+                },
+                "repeat": {
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false",
+                    "can_mention": "true",
+                    "can_at_everyone": "false"
+                },
+                "cancel": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "urban": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "dankmeme": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "lang": {
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "roulette": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "roulette_vs": {
+                    "enabled": "false",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "rem_rouletted": {
+                    "enabled": "true",
+                    "privileged": "true",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "locales": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                },
+                "modifiers": {
+                    "enabled": "true",
+                    "privileged": "false",
+                    "channel_list": [],
+                    "list_is_whitelist": "false"
+                }
+            }
         }
     }
 }

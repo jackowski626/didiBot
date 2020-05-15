@@ -27,6 +27,7 @@
 	"roulette_cmd":"Let's you play the ban roulette. The chance to get banned is 1/20",
 	"locales_cmd":"Displays available language codes for available bot languages",
 	"modifiers_cmd":"Displays available language modifiers codes",
+	"cr_cmd":"Allows to learn the bot a response to a custom command (cr = custom response).\nThis how to set a new response:_.cr -learn thx -response Thank you very much, kind sir_\nThe response can then simply be called like this:\n_.cr thx_",
 	"motd_has_been_updated":"The MOTD has been updated:",
 	"motd_is":["The MOTD is:\n```", "{motd}", "```"],
 	"ced_t_bo":"Cédric rules",
@@ -46,7 +47,7 @@
 	"t_as_cru":"You thought you could do that?",
 	"you_must_wait_before_cmd_use":["{mention}", " you have to wait ", "{minutes}", " minute(s) before using that command again"],
 	"already_executing_repetitive_task":"Already executing a repetitive command",
-	"you_cant_ex_cmd_more_five_times":["{mention}", "you do not have the permissions to execute this command more than five times"],
+	"you_cant_ex_cmd_more_five_times":["{mention}", " you do not have the permissions to execute this command more than five times"],
 	"command_canceled":"Command cancelled",
 	"ud_def_bean":"Urbean Dictionary definition:",
 	"ud_def":"Urban Dictionary definition:",
@@ -67,5 +68,6 @@
 	"user_got_rouletted":["{mention}", " lost. He got _rouletted_ for one hour"],
 	"mention_at_least_one_user":"Mention at least one user",
 	"vs_roulette_challenge_author":"Roulette challenge",
-	"vs_roulette_challenge_description":["I challenge ", "{challenged}", " in a roulette challenge!\nReact with \u2705 to accept the challenge or with \u174C to reject it. The challenger can cancel the challenge with \u1F6AB. The loosers won't be able to talk for an hour and words in their messages will be scrambled"]
+	"vs_roulette_challenge_description":["I challenge ", "{challenged}", " in a roulette challenge!\nReact with \u2705 to accept the challenge or with \u174C to reject it. The challenger can cancel the challenge with \u1F6AB. The loosers won't be able to talk for an hour and words in their messages will be scrambled"],
+	"meme_issued_by":["**Meme sent by ", "{issuer}", "**"]
 }

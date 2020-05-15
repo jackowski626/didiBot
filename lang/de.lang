@@ -42,7 +42,7 @@
 	"t_as_cru":"Hah, du dachtest du könntest es machen",
 	"you_must_wait_before_cmd_use":["{mention}", " Sie müssen ", "{minutes}", " minute(n) warten bevor Sie diesen Befehl wieder ausrufen wollen"],
 	"already_executing_repetitive_task":"Ich führe schon einen sich wiederholenden Befehl aus",
-	"you_cant_ex_cmd_more_five_times":["{mention}", "Sie haben kein Erlaubniss diesen Befehl mehr als fünf Mal auszurufen"],
+	"you_cant_ex_cmd_more_five_times":["{mention}", " Sie haben kein Erlaubniss diesen Befehl mehr als fünf Mal auszurufen"],
 	"command_canceled":"Befehl abgebrochen",
 	"ud_def_bean":"Definition vom Urbean Dictionnary:",
 	"ud_def":"Definition vom Urban Dictionnary:",

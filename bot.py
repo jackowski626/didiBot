@@ -5,6 +5,7 @@ import datetime
 import http.client
 import json
 import logging
+import math
 import os
 import pprint
 import random
@@ -24,11 +25,10 @@ dotenv.load_dotenv()
 #logging.basicConfig(filename='./bot_log.log',format='%(levelname)s:%(message)s', level=logging.DEBUG)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-
 """log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter(fmt="%(asctime)s %(levelname)s: %(message)s", 
-                          datefmt="%Y-%m-%d - %H:%M:%S")
+						  datefmt="%Y-%m-%d - %H:%M:%S")
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(formatter)
@@ -94,8 +94,10 @@ corona_image_url = os.getenv('corona_image_url')
 urban_dict_image_url = os.getenv('urban_dict_image_url')
 valid_locales = ['de', 'en', 'fr', 'pl']
 valid_lang_modifiers = ['uwu']
+valid_cmd_args = ['-help', '-privileged', '-enable', '-disable']
 
 bot = commands.Bot(command_prefix = fn.get_prefix)
+#bot.change_presence(name='ping for prefix', emoji='<a:pingree:710043739510407198')
 bot.remove_command("help")
 
 #Some bot vars
@@ -115,6 +117,7 @@ bot.cancelled_command = False
 @bot.event
 async def on_ready():
 	logging.warning(f'{bot.user} shall serve his master!')
+	await bot.change_presence(activity=discord.Game(name="ping for prefix"))
 
 @bot.event
 async def on_guild_join(guild):
@@ -122,7 +125,7 @@ async def on_guild_join(guild):
 		with open(db_filename, 'r+') as json_file:
 			data = json.load(json_file)
 			#Add a new server entry to the json
-			data["servers"][str(guild.id)] = {"server_id":guild.id,"prefix":default_prefix,"lang":"en","lang_modofier":"none","privileged_roles":[],"statusMessagesReservedToPrivileged":"False","greetedUsers": [],"notDisturbUsers": [],"goodbyedUsers": [],"lastUsedEspace": {}, "default_corona_country":"China","roulette_challenge_messages":[],"got_rouletted_timestamps":{},"roulette_vs_scores":{}}
+			data["servers"][str(guild.id)] = {"server_id":guild.id,"prefix":default_prefix,"lang":"en","lang_modofier":"none","privileged_roles":[],"statusMessagesReservedToPrivileged":"False","greetedUsers": [],"notDisturbUsers": [],"goodbyedUsers": [],"lastUsedEspace": {}, "default_corona_country":"China","roulette_challenge_messages":[],"got_rouletted_timestamps":{},"roulette_vs_scores":{},"commands": {"cr": {"enabled": "true", "privileged": "true", "can_mention": "true", "tricks": {"meilleur modpack": "GT:NH", "mathias": "tg <@!478855427564634112>, ton proco pue la merde", "jimmy": "https://www.youtube.com/watch?v=OioxvNbrMmM", "beta": "https://www.twitch.tv/directory/game/VALORANT"} }, "say":{"enabled": "true", "privileged": "true", "can_mention": "true"}, "motd":{"enabled": "true", "privileged": "false", "can_mention": "true"},"complimente":{"enabled": "true","privileged": "false"},"add_privileged":{"enabled": "true","privileged": "true"},"remove_privileged":{"enabled": "true","privileged": "true"},"set_prefix":{"enabled": "true","privileged": "true"},"corona":{"aliases":["coronal", "plague"],"enabled": "true","privileged": "true"},"espace":{"enabled": "true","privileged": "false","limit_non_privileged_users": "true","non_privileged_use_limit": 5,"non_privileged_cooldown": 5},"repeat":{"enabled": "true","privileged": "true","can_mention": "true","can_at_everyone": "false"},"cancel":{"enabled": "true","privileged": "false"},"urban":{"enabled": "true","privileged": "false"},"dankmeme":{"enabled": "true","privileged": "false"},"lang":{"enabled": "true","privileged": "true"},"roulette":{"enabled": "true","privileged": "false"},"roulette_vs":{"enabled": "false","privileged": "false"},"cr":{"enabled": "true","privileged": "false","add_new_privileged": "true"},"rem_rouletted":{"enabled": "true","privileged": "true"},"locales":{"enabled": "true","privileged": "false"},"modifiers":{"enabled": "true","privileged": "false"}}}
 			#Send message which pings a role with admin privileges and says that the bot should be configured
 			validRole = None
 			for role in guild.roles:
@@ -222,7 +225,8 @@ async def on_message(message):
 	if fuzz.ratio(message.content.lower(), 'rape me') > 80:
 		await message.channel.send(fn.localize(message, "stfu"))
 	if message.content.startswith('https://www.reddit.com/r/dankmemes/comments'):
-		await message.edit(content=None, embed=fn.random_meme(message, user_agent, client_id, client_secret, message.content[:message.content.find(' ')]))
+		await message.delete()
+		await message.channel.send(embed=fn.random_meme(message, user_agent, client_id, client_secret, message.content[:message.content.find(' ')]))
 
 @bot.event
 async def on_raw_reaction_add(reaction):
@@ -263,38 +267,49 @@ async def help(ctx):
 
 @bot.command()
 async def say(ctx, *, arg):
-	if fn.has_perms(ctx):
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		await ctx.message.delete()
 		await ctx.send(fn.apply_lang_modifier(ctx, arg))
 
 @bot.command()
 async def motd(ctx, *, motd=None):
-	if motd:
-		motd = motd.replace("'", "\\'").replace('"', '\\"')
-		if fn.ftp_get("motd.json", remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
-			with open("motd.json", 'r+') as json_file:
-				motd_data = json.load(json_file)
-				motd_data["motd"] = motd
-				fn.write_JSON(motd_data, json_file)
-			fn.ftp_put("motd.json", remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
-			await ctx.send(f"{fn.localize(ctx, 'motd_has_been_updated')} {motd_url}")
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		if motd:
+			motd = motd.replace("'", "\\'").replace('"', '\\"')
+			if fn.ftp_get("motd.json", remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+				with open("motd.json", 'r+') as json_file:
+					motd_data = json.load(json_file)
+					motd_data["motd"] = motd
+					fn.write_JSON(motd_data, json_file)
+				fn.ftp_put("motd.json", remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+				await ctx.send(f"{fn.localize(ctx, 'motd_has_been_updated')} {motd_url}")
+			else:
+				await ctx.send(f"{fn.localize(message, 'ftp_error')} {fn.localize(message, 'random_error')}")
 		else:
-			await ctx.send(f"{fn.localize(message, 'ftp_error')} {fn.localize(message, 'random_error')}")
-	else:
-		if fn.ftp_get("motd.json", remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
-			with open("motd.json") as json_file:
-				motd_data = json.load(json_file)
-				motd = motd_data["motd"]
-				await ctx.channel.send(fn.localize(ctx, "motd_is", {'motd':motd}))
-		else:
-			await ctx.send(f"{fn.localize(message, 'ftp_error')} {fn.localize(message, 'random_error')}")
+			if fn.ftp_get("motd.json", remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+				with open("motd.json") as json_file:
+					motd_data = json.load(json_file)
+					motd = motd_data["motd"]
+					await ctx.channel.send(fn.localize(ctx, "motd_is", {'motd':motd}))
+			else:
+				await ctx.send(f"{fn.localize(message, 'ftp_error')} {fn.localize(message, 'random_error')}")
 
 @bot.command()
 async def complimente(ctx):
-	await ctx.send(fn.localize(ctx, "ced_t_bo"))
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		await ctx.send(fn.localize(ctx, "ced_t_bo"))
 
 @bot.command(pass_context=True)
 async def add_privileged(ctx, *, message):
-	if fn.has_perms(ctx):
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
 		logging.debug("issued add_privileged")
 		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 			with open(db_filename, 'r+') as json_file:
@@ -328,24 +343,22 @@ async def info_error(ctx, error):
 #Command used to remove roles from the privileged_roles list
 @bot.command(pass_context=True)
 async def remove_privileged(ctx, *, message):
-	print("called remove_privileged")
-	if fn.has_perms(ctx):
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
 		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 			with open(db_filename, 'r+') as json_file:
 				data = json.load(json_file)
 				removedRoles = []
 				for role in ctx.guild.roles:
-					#print(f"message: {message.content}, mention: {role.mention}, role id: {role.id}, privileges_roles: {data['servers'][str(ctx.guild.id)]['privileged_roles']}")
 					if role.mention in message and role.id in data["servers"][str(ctx.guild.id)]["privileged_roles"]:
 						data["servers"][str(ctx.guild.id)]["privileged_roles"].remove(role.id)
 						removedRoles.append(role.name)
 				if len(removedRoles) > 0:
 					if len(removedRoles) == 1:
 						await ctx.channel.send(fn.localize(ctx, "role_rem_from_priv", {'role_name':removedRoles[0]}))
-						#await ctx.channel.send(f"Le rôle **{removedRoles[0]}** a été supprimé de la liste des rôles avec accès privilégié au bot")
 					else:
 						await ctx.channel.send(fn.localize(ctx, "roles_rem_from_priv", {'roles':'**, **'.join(removedRoles)}))
-						#await ctx.channel.send(f"Les rôles **{'**, **'.join(removedRoles)}** ont été supprimés de la liste des rôles avec accès privilégié au bot")
 					fn.write_JSON(data, json_file)
 				else:
 					await ctx.chnnel.send(fn.localize(ctx, "no_role_in_list"))
@@ -356,10 +369,8 @@ async def remove_privileged(ctx, *, message):
 					notRemoved.append(role.name)
 				if len(notRemoved) == 1:
 					await ctx.channel.send(fn.localize(ctx, "role_not_removed", {'not_removed':notRemoved[0]}))
-					#await ctx.channel.send(f"Le rôle **{notRemoved[0]}** n'a pas été supprimé de la liste de rôles avec accès privilégié au bot")
 				else:
 					await ctx.channel.send(fn.localize(ctx, "roles_not_removed", {'not_removed':'**, **'.join(notRemoved)}))
-					#await ctx.channel.send(f"Les rôles **{'**, **'.join(notRemoved)}** n'ont pas été supprimés de la liste de rôles avec accès privilégié au bot")
 		else:
 			await ctx.channel.send(f"{fn.localize(message, 'ftp_error')} {fn.localize(message, 'random_error')}")
 @remove_privileged.error
@@ -369,18 +380,22 @@ async def info_error(ctx, error):
 
 @bot.command(pass_context=True)
 async def set_prefix(ctx, message):
-	if fn.has_perms(ctx):
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		print("Issued set_prefix with "+message)
 		if not " " in message:
-			bot.command_prefix.remove(ctx.prefix)
-			bot.command_prefix.append(message)
+			#bot.command_prefix.remove(ctx.prefix)
+			#bot.command_prefix.append(message)
 			logging.debug(f"bot prefixes: {pp.pformat(bot.command_prefix)}")
 			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 				with open(db_filename, 'r+') as json_file:
 					data = json.load(json_file)
 					data["servers"][str(ctx.guild.id)]["prefix"] = message
 					fn.write_JSON(data, json_file)
+					print("bruh4: "+data["servers"][str(ctx.guild.id)]["prefix"])
 				fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
-				await ctx.channel.send(fn.localize(ctx, ))
+				await ctx.channel.send(f"{fn.localize(ctx, 'prefix_has_been_changed_to')}\n> {message}")
 			else:
 				await ctx.channel.send(f"{fn.localize(message, 'ftp_error')} {fn.localize(message, 'random_error')}")
 		else:
@@ -394,101 +409,107 @@ async def info_error(ctx, error):
 
 @bot.command(pass_context=True, aliases=['coronal', 'plague'])
 async def corona(ctx, *, country=None):
-	#countries = ['China','Italy','USA','Spain','Germany','Iran','France','Switzerland','S. Korea','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Australia','Brazil','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria','China','Italy','USA','Spain','Germany','Iran','France','S. Korea','Switzerland','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Brazil','Australia','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria']
-	#country_dict = {'china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','switzerland':'switzerland','s. korea':'south-korea','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','australia':'brazil','brazil':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','s. korea':'south-korea','switzerland':'switzerland','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','brazil':'brazil','australia':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','america':'us','united kingdom':'uk', 'amerique':'us'}
-	embed = discord.Embed(colour = discord.Color.blue())
-	embed.set_thumbnail(url=corona_image_url)
-	
-	#logging.debug(f"r: {r}")
-	if not country:
-		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
-			with open(db_filename, 'r+') as json_file:
-				data = json.load(json_file)
-				country = data['servers'][str(ctx.guild.id)]['default_corona_country']
-	if country.lower() not in world_list:
-		url = 'https://covid-193.p.rapidapi.com/statistics'
-		headers = {'x-rapidapi-host': 'covid-193.p.rapidapi.com','x-rapidapi-key': rapid_api_key}
-		res = requests.request("GET", url, headers=headers).json()['response']
-		#print(res)
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		#countries = ['China','Italy','USA','Spain','Germany','Iran','France','Switzerland','S. Korea','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Australia','Brazil','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria','China','Italy','USA','Spain','Germany','Iran','France','S. Korea','Switzerland','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Brazil','Australia','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria']
+		#country_dict = {'china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','switzerland':'switzerland','s. korea':'south-korea','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','australia':'brazil','brazil':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','s. korea':'south-korea','switzerland':'switzerland','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','brazil':'brazil','australia':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','america':'us','united kingdom':'uk', 'amerique':'us'}
+		embed = discord.Embed(colour = discord.Color.blue())
+		embed.set_thumbnail(url=corona_image_url)
+		
+		#logging.debug(f"r: {r}")
+		if not country:
+			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+				with open(db_filename, 'r+') as json_file:
+					data = json.load(json_file)
+					country = data['servers'][str(ctx.guild.id)]['default_corona_country']
+		if country.lower() not in world_list:
+			url = 'https://covid-193.p.rapidapi.com/statistics'
+			headers = {'x-rapidapi-host': 'covid-193.p.rapidapi.com','x-rapidapi-key': rapid_api_key}
+			res = requests.request("GET", url, headers=headers).json()['response']
+			#print(res)
 
-		temp = []
-		for elem in res:
-			temp.append(elem['country'])
-			#temp.append('"'+elem['country']+'":{"name":"","pre":"en"},')
-		#temp.append("}")
-		#print(','.join(temp))
+			temp = []
+			for elem in res:
+				temp.append(elem['country'])
+				#temp.append('"'+elem['country']+'":{"name":"","pre":"en"},')
+			#temp.append("}")
+			#print(','.join(temp))
 
+			selectedCountry = None
+			for element in res:
+				if not selectedCountry:
+					selectedCountry = element
+				elif fuzz.ratio(country.lower(), element['country'].lower()) > fuzz.ratio(country.lower(), selectedCountry['country'].lower()): 	 	 	
+					selectedCountry = element
+			embed.description = fn.localize(ctx, "covid_stats_country", {'country_declined':fn.localize(ctx, "country_declined", {'country':selectedCountry['country']}), 'country_prefix':fn.localize(ctx, "country_prefix", {'country':selectedCountry['country']}), "new_cases":fn.parse_covid_num(selectedCountry['cases']['new']), "active_cases":fn.parse_covid_num(selectedCountry['cases']['active']), "critical_cases":fn.parse_covid_num(selectedCountry['cases']['critical']), "total_confirmed":fn.parse_covid_num(selectedCountry['cases']['total']), "new_death":fn.parse_covid_num(selectedCountry['deaths']['new']), "total_death":fn.parse_covid_num(selectedCountry['deaths']['total']), "total_recovered":fn.parse_covid_num(selectedCountry['cases']['recovered']), "total_test":fn.parse_covid_num(selectedCountry['tests']['total'])})
+		elif country.lower() in world_list:
+			res = requests.get('https://api.covid19api.com/summary').json()
+			selectedCountry = {'Country': '[the world](https://www.youtube.com/watch?v=7ePWNmLP0Z0)','TotalConfirmed': res['Global']['TotalConfirmed'],'TotalDeaths': res['Global']['TotalDeaths'],'TotalRecovered': res['Global']['TotalRecovered']}
+			embed.description = fn.localize(ctx, "covid_stats_world", {'total_confirmed':selectedCountry['TotalConfirmed'], 'total_death':selectedCountry['TotalDeaths'], 'total_recovered':selectedCountry['TotalRecovered']})
+		await ctx.channel.send(embed = embed)
 
-		selectedCountry = None
-		for element in res:
-			if not selectedCountry:
-				selectedCountry = element
-			elif fuzz.ratio(country.lower(), element['country'].lower()) > fuzz.ratio(country.lower(), selectedCountry['country'].lower()): 	 	 	
-				selectedCountry = element
-		embed.description = fn.localize(ctx, "covid_stats_country", {'country_declined':fn.localize(ctx, "country_declined", {'country':selectedCountry['country']}), 'country_prefix':fn.localize(ctx, "country_prefix", {'country':selectedCountry['country']}), "new_cases":fn.parse_covid_num(selectedCountry['cases']['new']), "active_cases":fn.parse_covid_num(selectedCountry['cases']['active']), "critical_cases":fn.parse_covid_num(selectedCountry['cases']['critical']), "total_confirmed":fn.parse_covid_num(selectedCountry['cases']['total']), "new_death":fn.parse_covid_num(selectedCountry['deaths']['new']), "total_death":fn.parse_covid_num(selectedCountry['deaths']['total']), "total_recovered":fn.parse_covid_num(selectedCountry['cases']['recovered']), "total_test":fn.parse_covid_num(selectedCountry['tests']['total'])})
-		#embed.description = f"**Statistiques sur le Coronavirus en {selectedCountry['country']}**			\n\n‣ Nouveaux cas confirmés: **{fn.parse_covid_num(selectedCountry['cases']['new'])}**\n‣ Cas actifs: **{fn.parse_covid_num(selectedCountry['cases']['active'])}**\n‣ Cas critiques: **{fn.parse_covid_num(selectedCountry['cases']['critical'])}**\n‣ Total de cas confirmés: **{fn.parse_covid_num(selectedCountry['cases']['total'])}**\n‣ Nouvelles morts: **{fn.parse_covid_num(selectedCountry['deaths']['new'])}**\n‣ Total de morts: **{fn.parse_covid_num(selectedCountry['deaths']['total'])}**\n‣ Nombre de cas guéris: **{fn.parse_covid_num(selectedCountry['cases']['recovered'])}**\n‣ Total de tests effectués: **{fn.parse_covid_num(selectedCountry['tests']['total'])}**"
-	elif country.lower() in world_list:
-		res = requests.get('https://api.covid19api.com/summary').json()
-		selectedCountry = {'Country': '[the world](https://www.youtube.com/watch?v=7ePWNmLP0Z0)','TotalConfirmed': res['Global']['TotalConfirmed'],'TotalDeaths': res['Global']['TotalDeaths'],'TotalRecovered': res['Global']['TotalRecovered']}
-		embed.description = fn.localize(ctx, "covid_stats_world", {'total_confirmed':selectedCountry['TotalConfirmed'], 'total_death':selectedCountry['TotalDeaths'], 'total_recovered':selectedCountry['TotalRecovered']})
-		#embed.description = f"**Statistiques sur le Coronavirus dans le [monde](https://www.youtube.com/watch?v=7ePWNmLP0Z0)**			\n\n‣ Nombre de cas confirmés total: **{selectedCountry['TotalConfirmed']}**\n‣ Nombre de morts total: **{selectedCountry['TotalDeaths']}**\n‣ Total de cas guéris: **{selectedCountry['TotalRecovered']}**"
-	await ctx.channel.send(embed=embed)
-#shuts the bot down
-@bot.command(pass_context=True)
+#shuts the bot down, only for owner
+@bot.command(pass_context = True)
 async def s(ctx):
-    if ctx.author.id == author_id:
-        await ctx.channel.send(fn.apply_lang_modifier(ctx, random.choice(random_goodbye)))
-        await bot.logout()
-    elif ctx.author.id != author_id:
-    	await ctx.channel.send(fn.apply_lang_modifier(ctx, fn.localize(ctx, 't_as_cru')))
+	if ctx.author.id == author_id:
+		await ctx.channel.send(fn.apply_lang_modifier(ctx, random.choice(random_goodbye)))
+		await bot.logout()
+	elif ctx.author.id != author_id:
+		await ctx.channel.send(fn.apply_lang_modifier(ctx, fn.localize(ctx, 't_as_cru')))
 
-@bot.command(pass_context=True)
+@bot.command(pass_context = True)
 async def espace(ctx, repeat = 1):
-	if not bot.executing_repetitive_task and (repeat <= 5 or repeat > 5 and fn.has_perms(ctx)):
-		if not fn.has_perms(ctx):
-			logging.debug("Doesn't have perms")
-			with open(db_filename, 'r+') as json_file:
-				data = json.load(json_file)
-				if str(ctx.author.id) not in data["servers"][str(ctx.guild.id)]["lastUsedEspace"]:
-					logging.debug("user doesn't have a timestamp")
-					data["servers"][str(ctx.guild.id)]["lastUsedEspace"][str(ctx.author.id)] = datetime.datetime.now().timestamp()
-					fn.write_JSON(data, json_file)
-					fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
-				else:
-					logging.debug("user has a timestamp")
-					lastDate = data["servers"][str(ctx.guild.id)]["lastUsedEspace"][str(ctx.author.id)]
-					dateDelta = datetime.datetime.now().timestamp() - lastDate
-					logging.debug(f"dateDelta.seconds: {str(dateDelta)}")
-					if dateDelta / 60 < 5:
-						logging.debug("Delta < 5 min")
-						await ctx.send(fn.localize(ctx, "you_must_wait_before_cmd_use", {'mention':ctx.author.mention, 'minutes':str(5 - math.trunc(dateDelta / 60))}))
-						#await ctx.send(f"{ctx.author.mention} vous devez attendre {str(5 - math.trunc(dateDelta / 60))} minute(s) avant de pouvoir utiliser cette commande")
-						return
-					else:
-						logging.debug("delta > min")
-						data["servers"][str(ctx.guild.id)]["lastUsedEspace"] = datetime.datetime.now().timestamp()
+	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		#if not bot.executing_repetitive_task and 
+		if repeat <= 5 or repeat > 5 and fn.has_perms(ctx):
+			if not fn.has_perms(ctx):
+				logging.debug("Doesn't have perms")
+				with open(db_filename, 'r+') as json_file:
+					data = json.load(json_file)
+					if str(ctx.author.id) not in data["servers"][str(ctx.guild.id)]["lastUsedEspace"]:
+						logging.debug("user doesn't have a timestamp")
+						data["servers"][str(ctx.guild.id)]["lastUsedEspace"][str(ctx.author.id)] = datetime.datetime.now().timestamp()
 						fn.write_JSON(data, json_file)
 						fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
-		if not bot.executing_repetitive_task:
-			bot.executing_repetitive_task = True
-			for i in range(repeat):
+					else:
+						logging.debug("user has a timestamp")
+						lastDate = data["servers"][str(ctx.guild.id)]["lastUsedEspace"][str(ctx.author.id)]
+						dateDelta = datetime.datetime.now().timestamp() - lastDate
+						logging.debug(f"dateDelta.seconds: {str(dateDelta)}")
+						if dateDelta / 60 < 5:
+							logging.debug("Delta < 5 min")
+							await ctx.send(fn.localize(ctx, "you_must_wait_before_cmd_use", {'mention':ctx.author.mention, 'minutes':str(5 - math.trunc(dateDelta / 60))}))
+							#await ctx.send(f"{ctx.author.mention} vous devez attendre {str(5 - math.trunc(dateDelta / 60))} minute(s) avant de pouvoir utiliser cette commande")
+							return
+						else:
+							logging.debug("delta > min")
+							data["servers"][str(ctx.guild.id)]["lastUsedEspace"] = datetime.datetime.now().timestamp()
+							fn.write_JSON(data, json_file)
+							fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+			if not bot.executing_repetitive_task:
+				bot.executing_repetitive_task = True
+				for i in range(repeat):
+					if not bot.cancelled_command:
+						await ctx.channel.send(fn.gen_espace())
+					else:
+						bot.cancelled_command = False
+						break
 				if not bot.cancelled_command:
-					await ctx.channel.send(fn.gen_espace())
-				else:
+					bot.executing_repetitive_task = False
 					bot.cancelled_command = False
-					break
-			if not bot.cancelled_command:
-				bot.executing_repetitive_task = False
-				bot.cancelled_command = False
-		else:
-			await ctx.send(fn.localize(ctx, "already_executing_repetitive_task"))
-	elif guildHasThisPrefix(ctx.guild.id, ctx.prefix) and repeat > 5 and not fn.has_perms(ctx):
-		await ctx.send(fn.localize(ctx, "you_cant_ex_cmd_more_five_times", {'mention':ctx.author.mention}))
+		elif repeat > 5 and not fn.has_perms(ctx):
+			await ctx.send(fn.localize(ctx, "you_cant_ex_cmd_more_five_times", {'mention':ctx.author.mention}))
 		#await ctx.send(f"{ctx.author.mention} vous n'avez pas le droit de répéter cette commande plus de cinq fois")
 
-@bot.command(pass_context=True)
+@bot.command(pass_context = True)
 async def repeat(ctx, repeat, *, arg):
-	if not bot.executing_repetitive_task and fn.has_perms(ctx):
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		#if not bot.executing_repetitive_task:
 		logging.debug(f"bot.executing_repetitive_task is: {str(bot.executing_repetitive_task)}")
 		bot.executing_repetitive_task = True
 		logging.debug("setting bot.executing_repetitive_task True")
@@ -502,84 +523,91 @@ async def repeat(ctx, repeat, *, arg):
 			bot.executing_repetitive_task = False
 			bot.cancelled_command = False
 			logging.debug("setting bot.executing_repetitive_task false")
-	elif bot.executing_repetitive_task:
-		await ctx.send(fn.localize(ctx, "already_executing_repetitive_task"))
+	#elif bot.executing_repetitive_task:
+	#	await ctx.send(fn.localize(ctx, "already_executing_repetitive_task"))
 
 @bot.command(pass_context=True)
 async def cancel(ctx):
-	if guildHasThisPrefix(ctx.guild.id, ctx.prefix):
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
 		bot.cancelled_command = True
 		bot.executing_repetitive_task = False
 		await ctx.send(fn.localize(ctx, "command_canceled"))
 
 @bot.command()
 async def urban(ctx, *, arg):
-	embed = discord.Embed(colour = discord.Color.blue())
-	embed.set_thumbnail(url=urban_dict_image_url)
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		embed = discord.Embed(colour = discord.Color.blue())
+		embed.set_thumbnail(url = urban_dict_image_url)
+		url = 'https://mashape-community-urban-dictionary.p.rapidapi.com/define'
+		querystring = {"term":arg}
+		headers = {
+			'x-rapidapi-host': "mashape-community-urban-dictionary.p.rapidapi.com",
+			'x-rapidapi-key': rapid_api_key
+			}
+		response = requests.request("GET", url, headers = headers, params = querystring)
+			
+		if len(response.json()['list']) > 0:
+			res = response.json()['list'][0]
+			word = res['word']
+			definition = fn.strip(fn.strip(res['definition'], '['), ']')
+			example = fn.strip(fn.strip(res['example'], '['), ']')
+			url = res['permalink']
+			author = res['author']
+			written_on = res['written_on'] #example: '2020-01-17T00:00:00.000Z'
+			upvotes = res['thumbs_up']
+			downvotes = res['thumbs_down']
 
-	url = 'https://mashape-community-urban-dictionary.p.rapidapi.com/define'
-	querystring = {"term":arg}
-	headers = {
-	    'x-rapidapi-host': "mashape-community-urban-dictionary.p.rapidapi.com",
-	    'x-rapidapi-key': rapid_api_key
-	    }
-	response = requests.request("GET", url, headers=headers, params=querystring)
-		
-	if len(response.json()['list']) > 0:
-		res = response.json()['list'][0]
+			day = int(written_on[8:10])
+			month = date_dict[written_on[5:7]]
+			year = written_on[0:4]
+			contributor = fn.localize(ctx, 'ud_contributor', {'author':author, 'month':fn.localize(ctx, 'month_name', {'month':written_on[5:7]}), 'day':day, 'year':year})
 
-		word = res['word']
-		definition = fn.strip(fn.strip(res['definition'], '['), ']')
-		example = fn.strip(fn.strip(res['example'], '['), ']')
-		url = res['permalink']
-		author = res['author']
-		written_on = res['written_on'] #example: '2020-01-17T00:00:00.000Z'
-		upvotes = res['thumbs_up']
-		downvotes = res['thumbs_down']
-
-		day = int(written_on[8:10])
-		month = date_dict[written_on[5:7]]
-		year = written_on[0:4]
-		contributor = fn.localize(ctx, 'ud_contributor', {'author':author, 'month':fn.localize(ctx, 'month_name', {'month':written_on[5:7]}), 'day':day, 'year':year})
-		#contributor = f"par {author}, le {day} {month} {year}"
-
-		if 'bean' in word.lower() or 'bean' in definition.lower():
-			embed.set_author(name = fn.localize(ctx, 'ud_def_bean'))
+			if 'bean' in word.lower() or 'bean' in definition.lower():
+				embed.set_author(name = fn.localize(ctx, 'ud_def_bean'))
+			else:
+				embed.set_author(name = fn.localize(ctx, 'ud_def'))
+			
+			embed.description = f"[**{word}**]({url})\n{definition}\n_{example}_\n\n{contributor}\n{upvotes}:thumbsup: {downvotes}:thumbsdown:"
+			
+			await ctx.send(embed=embed)
 		else:
-			embed.set_author(name = fn.localize(ctx, 'ud_def'))
-		
-		embed.description = f"[**{word}**]({url})\n{definition}\n_{example}_\n\n{contributor}\n{upvotes}:thumbsup: {downvotes}:thumbsdown:"
-		
-		await ctx.send(embed=embed)
-	else:
-		url = f"https://www.urbandictionary.com/define.php?term={arg}"
-		page = requests.get(url)
-		soup = BeautifulSoup(page.content, 'html.parser')
-		tryThese = soup.find_all("div", class_ = "try-these")[0]
-		w1 = tryThese.find_next("li")
-		w2 = w1.find_next("li")
-		w3 = w2.find_next("li")
-		w4 = w3.find_next("li")
-		embed.set_author(name = fn.localize(ctx, 'ud_not_found', {'word':arg}))
-		#embed.set_author(name="Le mot **" + arg + "** n'a pas été trouvé")
-		if w1:
-			embed.description = fn.localize(ctx, 'ud_did_you_mean') + w1.getText()
-		if w2:
-			embed.description += "\n‣ " + w2.getText()
-		if w3:
-			embed.description += "\n‣ " + w3.getText()
-		if w4:
-			embed.description += "\n‣ " + w4.getText()
-		#await ctx.send("Le mot \"**" + arg + "**\" n'a pas été trouvé")
-		await ctx.send(embed = embed)
+			url = f"https://www.urbandictionary.com/define.php?term={arg}"
+			page = requests.get(url)
+			soup = BeautifulSoup(page.content, 'html.parser')
+			tryThese = soup.find_all("div", class_ = "try-these")[0]
+			w1 = tryThese.find_next("li")
+			w2 = w1.find_next("li")
+			w3 = w2.find_next("li")
+			w4 = w3.find_next("li")
+			embed.set_author(name = fn.localize(ctx, 'ud_not_found', {'word':arg}))
+			#embed.set_author(name="Le mot **" + arg + "** n'a pas été trouvé")
+			if w1:
+				embed.description = fn.localize(ctx, 'ud_did_you_mean') + w1.getText()
+			if w2:
+				embed.description += "\n‣ " + w2.getText()
+			if w3:
+				embed.description += "\n‣ " + w3.getText()
+			if w4:
+				embed.description += "\n‣ " + w4.getText()
+			#await ctx.send("Le mot \"**" + arg + "**\" n'a pas été trouvé")
+			await ctx.send(embed = embed)
 
 @bot.command(pass_context = True)
 async def dankmeme(ctx, url = None):
-	await ctx.channel.send(embed = fn.random_meme(ctx, user_agent, client_id, client_secret))
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		await ctx.channel.send(embed = fn.random_meme(ctx, user_agent, client_id, client_secret))
 
 @bot.command()
 async def lang(ctx, lang, modifier=None):
-	if fn.has_perms(ctx):
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
 		if lang in valid_locales:
 			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 				with open(db_filename, 'r+') as json_file:
@@ -597,32 +625,75 @@ async def lang(ctx, lang, modifier=None):
 		else:
 			await ctx.send(fn.localize(ctx, "locale_not_found"))
 	else:
-		await ctx.send(fn.localize(ctx, '"you_dont_have_perms"'))
+		await ctx.send(fn.localize(ctx, "you_dont_have_perms"))
 
 @bot.command(pass_context = True)
 async def roulette(ctx):
-	if random.randint(0, 20) == 20:
-		await ctx.send(fn.localize(ctx, "user_banned"))
-		await discord.Member.ban(ctx.author, reason=fn.localize(ctx, "roulette_ban_message", vars={'mention':ctx.author.mention}), delete_message_days=0)
-	else:
-		await ctx.send(fn.localize(ctx, "almost_banned"))
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		if random.randint(0, 5) == 4:
+			await ctx.send(fn.localize(ctx, "user_banned"))
+			await discord.Member.ban(ctx.author, reason=fn.localize(ctx, "roulette_ban_message", vars={'mention':ctx.author.mention}), delete_message_days=0)
+		else:
+			await ctx.send(fn.localize(ctx, "almost_banned", vars={'mention':ctx.author.mention}))
 
 @bot.command(pass_context = True)
 async def roulette_vs(ctx, mention):
-	if len(ctx.message.mentions) == 0:
-		await ctx.send(fn.localize(ctx, "mention_at_least_one_user"))
-	else:
-		embed = discord.Embed(colour = discord.Color.blue())
-		embed.set_author(name = fn.localize(ctx, 'vs_roulette_challenge_author'))
-		embed.description = fn.localize(ctx, 'vs_roulette_challenge_description', vars={'challenged':", ".join(ctx.message.mentions)})
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		if len(ctx.message.mentions) == 0:
+			await ctx.send(fn.localize(ctx, "mention_at_least_one_user"))
+		else:
+			embed = discord.Embed(colour = discord.Color.blue())
+			embed.set_author(name = fn.localize(ctx, 'vs_roulette_challenge_author'))
+			embed.description = fn.localize(ctx, 'vs_roulette_challenge_description', vars={'challenged':", ".join(ctx.message.mentions)})
+			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+				with open(db_filename, 'r+') as json_file:
+					data = json.load(json_file)
+					data['servers'][str(ctx.guild.id)]['roulette_challenge_messages'].append(ctx.message.id)
+					fn.write_JSON(data, json_file)
+			fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+			await ctx.message.edit(content=None, embed=embed)
+			await ctx.message.add_reaction("✅")
+
+#custom response commands. Ex: .cr -learn thx -response Thank you very much, kind sir
+@bot.command(pass_context = True)
+async def cr(ctx):
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		non_privileged_can_add = False
 		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
-			with open(db_filename, 'r+') as json_file:
-				data = json.load(json_file)
-				data['servers'][str(ctx.guild.id)]['roulette_challenge_messages'].append(ctx.message.id)
-				fn.write_JSON(data, json_file)
-		fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
-		await ctx.message.edit(content=None, embed=embed)
-		await ctx.message.add_reaction("✅")
+				with open(db_filename, 'r+') as json_file:
+					data = json.load(json_file)
+					if data['servers'][str(ctx.guild.id)]['commands']['cr']['add_new_privileged'] == 'true':
+						non_privileged_can_add = True
+		if message.startswith('-learn') and (has_perms(ctx) or non_privileged_can_add):
+			trick = message[7:message.find(' -')]
+			response = message[message.find('-response')+10:]
+			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+				with open(db_filename, 'r+') as json_file:
+					data = json.load(json_file)
+					data['servers'][str(ctx.guild.id)]['commands']['cr']['tricks'][trick] = response
+					fn.write_JSON(data, json_file)
+			fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+		elif message.startswith('-unlearn') and fn.cmd_enabled('cr') and has_perms(ctx):
+			trick = message[9:]
+			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+				with open(db_filename, 'r+') as json_file:
+					data = json.load(json_file)
+					if message in data['servers'][str(ctx.guild.id)]['commands']['cr']['tricks']:
+						del data['servers'][str(ctx.guild.id)]['commands']['cr']['tricks'][message]
+					fn.write_JSON(data, json_file)
+			fn.ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
+		else:
+			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
+				with open(db_filename, 'r') as json_file:
+					data = json.load(json_file)
+					if message in data["servers"][str(ctx.guild.id)]["commands"]["cr"]["tricks"]:
+						await ctx.send(data['servers'][str(ctx.guild.id)]['commands']['cr']['tricks'][message])
 
 """else:
 	got_rouletted_exists = False
@@ -657,12 +728,22 @@ async def rem_rouletted(ctx):
 
 @bot.command(pass_context = True)
 async def locales(ctx):
-	await ctx.send(fn.localize(ctx, "available_locales", vars={'codes':", ".join(valid_locales)}))
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		await ctx.send(fn.localize(ctx, "available_locales", vars={'codes':", ".join(valid_locales)}))
 
 @bot.command(pass_context = True)
 async def modifiers(ctx):
-	await ctx.send(fn.localize(ctx, "available_modifiers", vars={'modifiers':", ".join(valid_lang_modifiers)}))
-	
+	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+		fn.shared_cmd_actions(ctx)
+	elif fn.can_ex_cmd(ctx):
+		await ctx.send(fn.localize(ctx, "available_modifiers", vars={'modifiers':", ".join(valid_lang_modifiers)}))
+
+#Python hard crash command, only owner
+@bot.command(pass_context = True)
+async def crash(ctx):
+	fn.crash(ctx)
 		
 #@bot.command(pass_context=True)
 #async def s(ctx):

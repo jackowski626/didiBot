@@ -42,7 +42,7 @@
 	"t_as_cru":"T'as cru t'avais le droit",
 	"you_must_wait_before_cmd_use":["{mention}", " vous devez attendre ", "{minutes}", " minute(s) avant de pouvoir utiliser cette commande"],
 	"already_executing_repetitive_task":"Déjà en traîn d'exécuter une commande répétitive",
-	"you_cant_ex_cmd_more_five_times":["{mention}", "vous n'avez pas le droit de répéter cette commande plus de cinq fois"],
+	"you_cant_ex_cmd_more_five_times":["{mention}", " vous n'avez pas le droit de répéter cette commande plus de cinq fois"],
 	"command_canceled":"Commande annulée",
 	"ud_def_bean":"Définition du Dictionnaire Urbean:",
 	"ud_def":"Définition du Dictionnaire Urbain:",
