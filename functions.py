@@ -1,4 +1,3 @@
-import asyncio
 from ftplib import FTP
 import http.client
 import json
@@ -57,9 +56,6 @@ elif host == 'heroku':
 	is_db_remote = True
 	db_filename = os.getenv('heroku_db_filename')
 	chromedriver_path = os.getenv('CHROMEDRIVER_PATH')
-
-async def testfunc(ctx):
-	await ctx.channel.send("testttt")
 
 def get_prefix(bot, message):
 	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
@@ -393,15 +389,11 @@ def set_privilege(ctx):
 	if ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 		with open(db_filename, 'r+') as json_file:
 			data = json.load(json_file)
-			res_bool = ctx.message.content[14 + len(ctx.command.name):]
+			res_bool = ctx.message[14 + len(ctx.command.name):]
 			if res_bool == 'true':
 				data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['privileged'] = 'true'
-				return True
 			elif res_bool == 'false':
 				data['servers'][str(ctx.guild.id)]['commands'][ctx.command.name]['privileged'] = 'false'
-				return False
-			else:
-				return 'error'
 			write_JSON(data, json_file)
 		ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
 
@@ -421,26 +413,11 @@ def disable_cmd(ctx):
 			write_JSON(data, json_file)
 		ftp_put(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw)
 
-async def shared_cmd_actions(ctx):
+def shared_cmd_actions(ctx):
 	msg = ctx.message.content[len(ctx.command.name)+2:]
-	print("msg: "+msg)
 	if msg.startswith('-privileged') and has_perms(ctx):
-		print("issued -privileged")
-		if set_privilege(ctx) == 'error':
-			await ctx.channel.send(localize(ctx, 'command_privileged_syntax'))
-		elif set_privilege(ctx) == False:
-			await ctx.channel.send(localize(ctx, 'command_privileged_off', vars = {'name':ctx.command.name}))
-		else:
-			await ctx.channel.send(localize(ctx, 'command_privileged_on', vars = {'name':ctx.command.name}))
+		set_privilege(ctx)
 	elif msg.startswith('-enable') and has_perms(ctx):
 		enable_cmd(ctx)
-		await ctx.channel.send(localize(ctx, 'command_enabled', vars = {'name':ctx.command.name}))
 	elif msg.startswith('-disable') and has_perms(ctx):
 		disable_cmd(ctx)
-		await ctx.channel.send(localize(ctx, 'command_disabled', vars = {'name':ctx.command.name}))
-
-def has_args(ctx):
-	for arg in ['-help', '-privileged', '-enable', '-disable']:
-		if ctx.message.content[len(ctx.command.name)+2:].startswith(arg):
-			return True
-	return False

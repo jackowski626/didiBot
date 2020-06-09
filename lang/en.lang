@@ -69,10 +69,5 @@
 	"mention_at_least_one_user":"Mention at least one user",
 	"vs_roulette_challenge_author":"Roulette challenge",
 	"vs_roulette_challenge_description":["I challenge ", "{challenged}", " in a roulette challenge!\nReact with \u2705 to accept the challenge or with \u174C to reject it. The challenger can cancel the challenge with \u1F6AB. The loosers won't be able to talk for an hour and words in their messages will be scrambled"],
-	"meme_issued_by":["**Meme sent by ", "{issuer}", "**"],
-	"command_privileged_on":["Command `", "{name}", "` has been restricted to users with high bot privileges"],
-	"command_privileged_off":["Command `", "{name}", "` has been allowed for all users"],
-	"command_enabled":["Command `", "{name}", "` has been disabled"],
-	"command_disabled":["Command `", "{name}", "` has been enabled"],
-	"command_privileged_syntax":"The syntax for making a command privileged/unprivileged is:\n`.command -privileged true`"
+	"meme_issued_by":["**Meme sent by ", "{issuer}", "**"]
 }

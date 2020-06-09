@@ -23,11 +23,6 @@
 	"urban_cmd":"Sucht das angegebene Wort im Urban Dictionnary\nNutzungsbeispiel:\n_.urban hanus_",
 	"dankmeme_cmd":"Zeigt einen zufälligen Meme von den hundert Top-memes in r/dankmemes",
 	"cancel_cmd":"Ermöglicht es die Befehle _.repeat_ und _.espace_ abzubrechen",
-	"lang_cmd":"Changes the bot language. Use with a language code\nExample of use:\n_.lang en_\nThis command also accepts modifiers:\n_.lang en uwu_",
-	"roulette_cmd":"Let's you play the ban roulette. The chance to get banned is 1/20",
-	"locales_cmd":"Displays available language codes for available bot languages",
-	"modifiers_cmd":"Displays available language modifiers codes",
-	"cr_cmd":"Allows to learn the bot a response to a custom command (cr = custom response).\nThis how to set a new response:_.cr -learn thx -response Thank you very much, kind sir_\nThe response can then simply be called like this:\n_.cr thx_",
 	"motd_has_been_updated":"Der Nachricht des Tages wurde gewechselt:",
 	"motd_is":["Die Nachricht des Tages ist:\n```", "{motd}", "```"],
 	"ced_t_bo":"Cédric, wir lieben dich",
@@ -51,7 +46,7 @@
 	"command_canceled":"Befehl abgebrochen",
 	"ud_def_bean":"Definition vom Urbean Dictionnary:",
 	"ud_def":"Definition vom Urban Dictionnary:",
-	"ud_contributor":["bei ", "{author}", ", den ", "{day}", ". ", "{month}", " ", "{year}"],
+	"ud_contributor":["bei ", "{author}", ", den", "{day}", ". ", "{month}", " ", "{year}"],
 	"ud_not_found":["Das Wort \"", "{word}", "\" wurde nicht gefunden"],
 	"ud_did_you_mean":"**Sie meinten vielleicht eines von diesen Wörter:**",
 	"dank_meme_from_hot":"Dankmeme von Hot",
@@ -68,11 +63,5 @@
 	"user_got_rouletted":["{mention}", " hat verloren. Er ist _rouletted_ für eine Stunde"],
 	"mention_at_least_one_user":"Erwähnen sie bitte mindestens einen Bnutzer",
 	"vs_roulette_challenge_author":"Rouletteherausforderung",
-	"vs_roulette_challenge_description":["Ich fordere ", "{challenged}", " in einer Rouletteherausforderung aus!\nReagiere mit \u2705 um die Herausforderung zu akzeptieren oder mit \u174C um sie zu abzulehnen. Der Herausforderer kann die Herausforderung mit \u1F6AB absagen. Die verlierer werden wärend einer Stunde nicht sprechen können und ihre Nachrichten werden gemischt sein"],
-	"meme_issued_by":["**Meme geschickt bei ", "{issuer}", "**"],
-	"command_privileged_on":["Der Befehl `", "{name}", "` wurde auf Benutzer mit hohen Bot-Privilegien beschränkt"],
-	"command_privileged_off":["Der Befehl `", "{name}", "` wurde allen Benutzern erlaubt"],
-	"command_enabled":["Der Befehl `", "{name}", "` wurde aktiviert"],
-	"command_disabled":["Der Befehl `", "{name}", "` wurde deaktiviert"],
-	"command_privileged_syntax":"Die Syntax, um einen Befehl privilegiert/unprivilegiert zu machen, ist:\n`.command -privileged true`"
+	"vs_roulette_challenge_description":["Ich fordere ", "{challenged}", " in einer Rouletteherausforderung aus!\nReagiere mit \u2705 um die Herausforderung zu akzeptieren oder mit \u174C um sie zu abzulehnen. Der Herausforderer kann die Herausforderung mit \u1F6AB absagen. Die verlierer werden wärend einer Stunde nicht sprechen können und ihre Nachrichten werden gemischt sein"]
 }
