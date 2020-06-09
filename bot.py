@@ -125,7 +125,7 @@ async def on_guild_join(guild):
 		with open(db_filename, 'r+') as json_file:
 			data = json.load(json_file)
 			#Add a new server entry to the json
-			data["servers"][str(guild.id)] = {"server_id":guild.id,"prefix":default_prefix,"lang":"en","lang_modofier":"none","privileged_roles":[],"statusMessagesReservedToPrivileged":"False","greetedUsers": [],"notDisturbUsers": [],"goodbyedUsers": [],"lastUsedEspace": {}, "default_corona_country":"China","roulette_challenge_messages":[],"got_rouletted_timestamps":{},"roulette_vs_scores":{},"commands": {"cr": {"enabled": "true", "privileged": "true", "can_mention": "true", "tricks": {"meilleur modpack": "GT:NH", "mathias": "tg <@!478855427564634112>, ton proco pue la merde", "jimmy": "https://www.youtube.com/watch?v=OioxvNbrMmM", "beta": "https://www.twitch.tv/directory/game/VALORANT"} }, "say":{"enabled": "true", "privileged": "true", "can_mention": "true"}, "motd":{"enabled": "true", "privileged": "false", "can_mention": "true"},"complimente":{"enabled": "true","privileged": "false"},"add_privileged":{"enabled": "true","privileged": "true"},"remove_privileged":{"enabled": "true","privileged": "true"},"set_prefix":{"enabled": "true","privileged": "true"},"corona":{"aliases":["coronal", "plague"],"enabled": "true","privileged": "true"},"espace":{"enabled": "true","privileged": "false","limit_non_privileged_users": "true","non_privileged_use_limit": 5,"non_privileged_cooldown": 5},"repeat":{"enabled": "true","privileged": "true","can_mention": "true","can_at_everyone": "false"},"cancel":{"enabled": "true","privileged": "false"},"urban":{"enabled": "true","privileged": "false"},"dankmeme":{"enabled": "true","privileged": "false"},"lang":{"enabled": "true","privileged": "true"},"roulette":{"enabled": "true","privileged": "false"},"roulette_vs":{"enabled": "false","privileged": "false"},"cr":{"enabled": "true","privileged": "false","add_new_privileged": "true"},"rem_rouletted":{"enabled": "true","privileged": "true"},"locales":{"enabled": "true","privileged": "false"},"modifiers":{"enabled": "true","privileged": "false"}}}
+			data["servers"][str(guild.id)] = {"server_id":guild.id,"prefix":default_prefix,"lang":"en","lang_modifier":"none","privileged_roles":[],"statusMessagesReservedToPrivileged":"False","greetedUsers": [],"notDisturbUsers": [],"goodbyedUsers": [],"lastUsedEspace": {}, "default_corona_country":"China","roulette_challenge_messages":[],"got_rouletted_timestamps":{},"roulette_vs_scores":{},"commands": {"cr": {"enabled": "true", "privileged": "true", "can_mention": "true", "tricks": {} }, "say":{"enabled": "true", "privileged": "true", "can_mention": "true"}, "motd":{"enabled": "true", "privileged": "false", "can_mention": "true"},"complimente":{"enabled": "true","privileged": "false"},"add_privileged":{"enabled": "true","privileged": "true"},"remove_privileged":{"enabled": "true","privileged": "true"},"set_prefix":{"enabled": "true","privileged": "true"},"corona":{"aliases":["coronal", "plague"],"enabled": "true","privileged": "true"},"espace":{"enabled": "true","privileged": "false","limit_non_privileged_users": "true","non_privileged_use_limit": 5,"non_privileged_cooldown": 5},"repeat":{"enabled": "true","privileged": "true","can_mention": "true","can_at_everyone": "false"},"cancel":{"enabled": "true","privileged": "false"},"urban":{"enabled": "true","privileged": "false"},"dankmeme":{"enabled": "true","privileged": "false"},"lang":{"enabled": "true","privileged": "true"},"roulette":{"enabled": "true","privileged": "false"},"roulette_vs":{"enabled": "false","privileged": "false"},"cr":{"enabled": "true","privileged": "false","add_new_privileged": "true"},"rem_rouletted":{"enabled": "true","privileged": "true"},"locales":{"enabled": "true","privileged": "false"},"modifiers":{"enabled": "true","privileged": "false"}}}
 			#Send message which pings a role with admin privileges and says that the bot should be configured
 			validRole = None
 			for role in guild.roles:
@@ -247,6 +247,12 @@ async def on_raw_reaction_add(reaction):
 #COMMANDS
 ########---------
 
+try:
+	import irrelevant as irr
+	print("Loading irrelevant module")
+except Exception as e:
+	print("Irrelevant module not found")
+
 @bot.command(pass_context=True)
 async def help(ctx):
 	embed = discord.Embed(colour = discord.Color.blue())
@@ -263,12 +269,16 @@ async def help(ctx):
 	embed.add_field(name="urban", value=fn.localize(ctx, "urban_cmd"), inline=False)
 	embed.add_field(name="dankmeme", value=fn.localize(ctx, "dankmeme_cmd"), inline=False)
 	embed.add_field(name="cancel", value=fn.localize(ctx, "cancel_cmd"), inline=False)
+	embed.add_field(name="lang", value=fn.localize(ctx, "lang_cmd"), inline=False)
+	embed.add_field(name="locales", value=fn.localize(ctx, "locales_cmd"), inline=False)
+	embed.add_field(name="modifiers", value=fn.localize(ctx, "modifiers_cmd"), inline=False)
+	embed.add_field(name="cr", value=fn.localize(ctx, "cr_cmd"), inline=False)
 	await ctx.author.send(embed=embed)
 
 @bot.command()
 async def say(ctx, *, arg):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		await ctx.message.delete()
 		await ctx.send(fn.apply_lang_modifier(ctx, arg))
@@ -276,7 +286,7 @@ async def say(ctx, *, arg):
 @bot.command()
 async def motd(ctx, *, motd=None):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		if motd:
 			motd = motd.replace("'", "\\'").replace('"', '\\"')
@@ -301,14 +311,14 @@ async def motd(ctx, *, motd=None):
 @bot.command()
 async def complimente(ctx):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		await ctx.send(fn.localize(ctx, "ced_t_bo"))
 
 @bot.command(pass_context=True)
 async def add_privileged(ctx, *, message):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		logging.debug("issued add_privileged")
 		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
@@ -344,7 +354,7 @@ async def info_error(ctx, error):
 @bot.command(pass_context=True)
 async def remove_privileged(ctx, *, message):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 			with open(db_filename, 'r+') as json_file:
@@ -381,7 +391,7 @@ async def info_error(ctx, error):
 @bot.command(pass_context=True)
 async def set_prefix(ctx, message):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		print("Issued set_prefix with "+message)
 		if not " " in message:
@@ -410,7 +420,7 @@ async def info_error(ctx, error):
 @bot.command(pass_context=True, aliases=['coronal', 'plague'])
 async def corona(ctx, *, country=None):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		#countries = ['China','Italy','USA','Spain','Germany','Iran','France','Switzerland','S. Korea','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Australia','Brazil','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria','China','Italy','USA','Spain','Germany','Iran','France','S. Korea','Switzerland','UK','Netherlands','Austria','Belgium','Norway','Canada','Portugal','Sweden','Brazil','Australia','Malaysia','Denmark','Ireland','Poland','Greece','Indonesia','Philippines','Hong Kong','Iraq','Algeria']
 		#country_dict = {'china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','switzerland':'switzerland','s. korea':'south-korea','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','australia':'brazil','brazil':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','china':'china','italy':'italy','usa':'us','spain':'spain','germany':'germany','iran':'iran','france':'france','s. korea':'south-korea','switzerland':'switzerland','uk':'uk','netherlands':'netherlands','austria':'austria','belgium':'belgium','norway':'norway','canada':'canada','portugal':'portugal','sweden':'sweden','brazil':'brazil','australia':'australia','malaysia':'malaysia','denmark':'denmark','ireland':'ireland','poland':'poland','greece':'greece','indonesia':'indonesia','philippines':'philippines','hong kong':'china-hong-kong-sar','iraq':'iraq','algeria':'algeria','america':'us','united kingdom':'uk', 'amerique':'us'}
@@ -459,9 +469,25 @@ async def s(ctx):
 		await ctx.channel.send(fn.apply_lang_modifier(ctx, fn.localize(ctx, 't_as_cru')))
 
 @bot.command(pass_context = True)
+async def test(ctx):
+	await fn.testfunc(ctx)
+
+@bot.command(pass_context = True)
+async def give(ctx):
+	print("issued give")
+	print(f"message.content: {ctx.message.content}")
+	if ctx.author.id == author_id:
+		for role in ctx.guild.roles:
+			if str(role.id) in ctx.message.content:
+				print(f"id: {role.id}")
+				await discord.Member.add_roles(ctx.author, role)
+	elif ctx.author.id != author_id:
+		await ctx.channel.send(fn.apply_lang_modifier(ctx, fn.localize(ctx, 't_as_cru')))
+
+@bot.command(pass_context = True)
 async def espace(ctx, repeat = 1):
 	if ctx.message.content[len(ctx.command.name)+2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		#if not bot.executing_repetitive_task and 
 		if repeat <= 5 or repeat > 5 and fn.has_perms(ctx):
@@ -507,7 +533,7 @@ async def espace(ctx, repeat = 1):
 @bot.command(pass_context = True)
 async def repeat(ctx, repeat, *, arg):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		#if not bot.executing_repetitive_task:
 		logging.debug(f"bot.executing_repetitive_task is: {str(bot.executing_repetitive_task)}")
@@ -529,7 +555,7 @@ async def repeat(ctx, repeat, *, arg):
 @bot.command(pass_context=True)
 async def cancel(ctx):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		bot.cancelled_command = True
 		bot.executing_repetitive_task = False
@@ -538,7 +564,7 @@ async def cancel(ctx):
 @bot.command()
 async def urban(ctx, *, arg):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		embed = discord.Embed(colour = discord.Color.blue())
 		embed.set_thumbnail(url = urban_dict_image_url)
@@ -599,14 +625,14 @@ async def urban(ctx, *, arg):
 @bot.command(pass_context = True)
 async def dankmeme(ctx, url = None):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		await ctx.channel.send(embed = fn.random_meme(ctx, user_agent, client_id, client_secret))
 
 @bot.command()
 async def lang(ctx, lang, modifier=None):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		if lang in valid_locales:
 			if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
@@ -630,10 +656,10 @@ async def lang(ctx, lang, modifier=None):
 @bot.command(pass_context = True)
 async def roulette(ctx):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		if random.randint(0, 5) == 4:
-			await ctx.send(fn.localize(ctx, "user_banned"))
+			await ctx.send(fn.localize(ctx, "user_banned", vars={'mention':ctx.author.mention}))
 			await discord.Member.ban(ctx.author, reason=fn.localize(ctx, "roulette_ban_message", vars={'mention':ctx.author.mention}), delete_message_days=0)
 		else:
 			await ctx.send(fn.localize(ctx, "almost_banned", vars={'mention':ctx.author.mention}))
@@ -641,7 +667,7 @@ async def roulette(ctx):
 @bot.command(pass_context = True)
 async def roulette_vs(ctx, mention):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		if len(ctx.message.mentions) == 0:
 			await ctx.send(fn.localize(ctx, "mention_at_least_one_user"))
@@ -661,15 +687,16 @@ async def roulette_vs(ctx, mention):
 #custom response commands. Ex: .cr -learn thx -response Thank you very much, kind sir
 @bot.command(pass_context = True)
 async def cr(ctx):
-	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+	#if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
+	if fn.has_args(ctx):
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		message = ctx.message.content[len(ctx.command.name) + 2:]
 		non_privileged_can_add = False
 		if fn.ftp_get(db_filename, remote_ftp_host, remote_ftp_path, remote_ftp_user, remote_ftp_pw):
 				with open(db_filename, 'r+') as json_file:
 					data = json.load(json_file)
-					if data['servers'][str(ctx.guild.id)]['commands']['cr']['add_new_privileged'] == 'true':
+					if data['servers'][str(ctx.guild.id)]['commands']['cr']['add_new_privileged'] == 'false':
 						non_privileged_can_add = True
 		if message.startswith('-learn') and (fn.has_perms(ctx) or non_privileged_can_add):
 			trick = message[7:message.find(' -')]
@@ -730,14 +757,14 @@ async def rem_rouletted(ctx):
 @bot.command(pass_context = True)
 async def locales(ctx):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		await ctx.send(fn.localize(ctx, "available_locales", vars={'codes':", ".join(valid_locales)}))
 
 @bot.command(pass_context = True)
 async def modifiers(ctx):
 	if ctx.message.content[len(ctx.command.name) + 2:] in valid_cmd_args:
-		fn.shared_cmd_actions(ctx)
+		await fn.shared_cmd_actions(ctx)
 	elif fn.can_ex_cmd(ctx):
 		await ctx.send(fn.localize(ctx, "available_modifiers", vars={'modifiers':", ".join(valid_lang_modifiers)}))
 

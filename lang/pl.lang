@@ -23,6 +23,11 @@
 	"urban_cmd":"Wyszukuje podaną wiadomość w Słowniku Miejskim\nPrzykład użycia:\n_.urban hanus_",
 	"dankmeme_cmd":"Wyświetla losowego mema spośród stu obecnie najgorętszych memów r/dankmemes",
 	"cancel_cmd":"Pozwala na anulowanie polecenia _.repeat_ lub _.espace_. Pomyśl o bałwanie który powtórzyłby _.espace_ tysiąc razy...",
+	"lang_cmd":"Changes the bot language. Use with a language code\nExample of use:\n_.lang en_\nThis command also accepts modifiers:\n_.lang en uwu_",
+	"roulette_cmd":"Let's you play the ban roulette. The chance to get banned is 1/20",
+	"locales_cmd":"Displays available language codes for available bot languages",
+	"modifiers_cmd":"Displays available language modifiers codes",
+	"cr_cmd":"Allows to learn the bot a response to a custom command (cr = custom response).\nThis how to set a new response:_.cr -learn thx -response Thank you very much, kind sir_\nThe response can then simply be called like this:\n_.cr thx_",
 	"motd_has_been_updated":"wiadomość dnia została zaktualizowana:",
 	"motd_is":["Wiadomość dnia to:\n```", "{motd}", "```"],
 	"ced_t_bo":"Cédric, jesteś zajebisty",
@@ -63,5 +68,11 @@
 	"user_got_rouletted":["{mention}", " przegrał. Został _zroulettowany_ na godzinę"],
 	"mention_at_least_one_user":"Proszę oznaczyć przynajmniej jednego użytkownika",
 	"vs_roulette_challenge_author":"Ruletka",
-	"vs_roulette_challenge_description":["Wyzywam ", "{challenged}", " w ruletce!\nZareaguj za pomocą \u2705 aby zaakceptować wyzwanie lub \u174C aby je odrzucić. Wyzywający może anulować wyzwanie za pomocą \u1F6AB.. Przegrani nie będą mogli mówić przez godzinę a ich wiadomości będą pomieszane"]
+	"vs_roulette_challenge_description":["Wyzywam ", "{challenged}", " w ruletce!\nZareaguj za pomocą \u2705 aby zaakceptować wyzwanie lub \u174C aby je odrzucić. Wyzywający może anulować wyzwanie za pomocą \u1F6AB.. Przegrani nie będą mogli mówić przez godzinę a ich wiadomości będą pomieszane"],
+	"meme_issued_by":["**Mem wysłany przez ", "{issuer}", "**"],
+	"command_privileged_on":["Polecenie `", "{name}", "` zostało ograniczone do użytkowników uprzywilejowanych"],
+	"command_privileged_off":["Polecenie `", "{name}", "` może teraz być używane przez wszystkich użytkowników"],
+	"command_enabled":["Polecenie `", "{name}", "` zostało wyłączone"],
+	"command_disabled":["Polecenie `", "{name}", "` zostało włączone"],
+	"command_privileged_syntax":"Składnia aby uczynić polecenie przywilejowane bądź nie jest następująca:\n`.command -privileged true`"
 }
